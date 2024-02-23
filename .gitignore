@@ -1,4 +1,6 @@
 .ipynb_checkpoints/
 data_analysis/.ipynb_checkpoints/
 
-temp_playground.ipynb
+
+__pycache__/
+models/__pycache__/
