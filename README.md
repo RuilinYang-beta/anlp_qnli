@@ -1,3 +1,6 @@
+# what i changed
+I added BiRNN.py file to models directory and changed temp_playground.py and utils.py to inclide BiRNN
+
 # what we have now
 
 ## these are probably mature enough to be used by others
