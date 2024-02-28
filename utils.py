@@ -14,7 +14,7 @@ from statics import Notation, Token, notation2key, labels
 BASE_PATH = "data/"
 
 def load_data(dataset: str): 
-  with open(f"{BASE_PATH}{dataset}.json", 'r') as file:
+  with open(f"{BASE_PATH}{dataset}.json", 'r', encoding='utf-8') as file:
       data_dict = json.load(file)
 
   # Access the data

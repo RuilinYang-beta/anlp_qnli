@@ -8,6 +8,7 @@ from utils import load_data, pretty_print, build_vocabulary, xy_pair_generator
 from statics import Notation, Token, notation2key, labels
 
 from models.SimpleRNN import SimpleRNN
+from models.BiRNN import BiRNN
 
 # load data 
 train = load_data("train")
@@ -29,32 +30,48 @@ hidden_size = 256
 output_size = 3
 
 # model 
-model = SimpleRNN(len(vocab), embedding_dim, hidden_size, output_size)
-h_0 = model.init_hidden()
+simpe_model = SimpleRNN(len(vocab), embedding_dim, hidden_size, output_size)
+
+bi_rnn_model = BiRNN(len(vocab), embedding_dim, hidden_size, output_size)
+
+h_0_simple = simpe_model.init_hidden()
+h_0_birnn = bi_rnn_model.init_hidden()
 
 
 # for updating model
-optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
+optimizer_simplernn = torch.optim.SGD(simpe_model.parameters(), lr=learning_rate)
+optimizer_bi_rnn = torch.optim.SGD(bi_rnn_model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
 nudge_every = 300
 
 for i in range(epoch):
   loader = xy_pair_generator(train, Notation.ORIGINAL_CHAR, vocab)
 
-  loss = 0
+  loss_simple = 0
+  loss_bi_rnn = 0
 
   for idx, xy_pair in enumerate(loader):
     x, y = xy_pair
-    final_out, h_n = model(x, h_0)
+    final_out_simple, h_n = simpe_model(x, h_0_simple)
+    final_out_bi_rnn = bi_rnn_model(x, h_0_birnn)
 
-    loss += criterion(final_out, y)
+    loss_simple += criterion(final_out_simple, y)
+    loss_bi_rnn += criterion(final_out_bi_rnn, y)
 
     if idx % nudge_every == 0:
-      print(f"Epoch-{i}, at example-{idx}, avg loss of past {nudge_every} example {round(loss.item() / nudge_every, 2)}")
+      print(f"Epoch-{i}, at example-{idx}, avg loss of past {nudge_every} "
+            f"example {round(loss_simple.item() / nudge_every, 2)}")
+      print(f"Epoch-{i}, at example-{idx}, avg loss of past {nudge_every} "
+            f"examples (BiRNN): {round(loss_bi_rnn.item() / nudge_every, 2)}")
 
-      loss.backward()
-      optimizer.step()
+      loss_simple.backward()
+      loss_bi_rnn.backward()
 
-      loss = 0 
-      model.zero_grad()
+      optimizer_simplernn.step()
+      optimizer_bi_rnn.step()
 
+      loss_simple = 0
+      loss_bi_rnn = 0
+
+      simpe_model.zero_grad()
+      bi_rnn_model.zero_grad()
