@@ -1,8 +1,11 @@
 """
 Constants used in the project.
 """
-
+import torch
 from enum import Enum, auto
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+SEED = 42
 
 # notation of numbers, as constant 
 class Notation(Enum):
@@ -15,6 +18,7 @@ class Notation(Enum):
 class Token(Enum):
   UNK = auto()  # unknown token
   SEP = auto()  # separator token to separate two statements
+  PADDING = auto()  # padding token
 
 
 notation2key = {
