@@ -19,13 +19,10 @@ class BiRNN(nn.Module):
     def forward(self, input, h_0):
         embedded = self.embedding(input)
         output, h_n = self.rnn(embedded, h_0)
-        # concatenate the hidden states from both directions
-        #hidden_cat = torch.cat((h_n[-2, :, :], h_n[-1, :, :]), dim=1)
         hidden_cat = torch.flatten(h_n)
 
         output = self.fc(hidden_cat)
-        return output
+        return output, h_n
 
     def init_hidden(self):
         return torch.zeros(2, self.hidden_size)
-        #return torch.zeros(self.hidden_size.unsqueeze(0).unsqueeze(1))

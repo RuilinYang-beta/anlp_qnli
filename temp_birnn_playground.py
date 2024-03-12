@@ -1,5 +1,11 @@
 """
-Playground to mess with simple RNN. Later it could be part of `qnli.py`.
+Ideally when switching to use a different model, we only need to change 
+model = OldModel(..) to model = NewModel(), 
+the rest of the code could have minor change but mostly the same, 
+especially when BiRNN and SimpleRNN are very similar.
+
+The playground for the two models are separated for now, this saves manual labor 
+of commenting and uncommenting 10+ lines of code every time I want to switch model.
 """
 import torch 
 import torch.nn as nn
@@ -18,7 +24,8 @@ train = load_data("train")
 # pretty_print(train[10])
 
 # get vocab based on dataset and notation
-vocab = build_vocabulary(train, Notation.ORIGINAL_CHAR)
+vocab = build_vocabulary(train, Notation.ORIGINAL)
+
 
 # hyperparams for training loop 
 epoch = 10
@@ -30,48 +37,35 @@ hidden_size = 256
 output_size = 3
 
 # model 
-simpe_model = SimpleRNN(len(vocab), embedding_dim, hidden_size, output_size)
-
 bi_rnn_model = BiRNN(len(vocab), embedding_dim, hidden_size, output_size)
 
-h_0_simple = simpe_model.init_hidden()
 h_0_birnn = bi_rnn_model.init_hidden()
 
 
 # for updating model
-optimizer_simplernn = torch.optim.SGD(simpe_model.parameters(), lr=learning_rate)
 optimizer_bi_rnn = torch.optim.SGD(bi_rnn_model.parameters(), lr=learning_rate)
 criterion = nn.CrossEntropyLoss()
 nudge_every = 300
 
 for i in range(epoch):
-  loader = xy_pair_generator(train, Notation.ORIGINAL_CHAR, vocab)
+  loader = xy_pair_generator(train, Notation.ORIGINAL, vocab)
 
-  loss_simple = 0
   loss_bi_rnn = 0
 
   for idx, xy_pair in enumerate(loader):
     x, y = xy_pair
-    final_out_simple, h_n = simpe_model(x, h_0_simple)
     final_out_bi_rnn = bi_rnn_model(x, h_0_birnn)
 
-    loss_simple += criterion(final_out_simple, y)
     loss_bi_rnn += criterion(final_out_bi_rnn, y)
 
     if idx % nudge_every == 0:
       print(f"Epoch-{i}, at example-{idx}, avg loss of past {nudge_every} "
-            f"example {round(loss_simple.item() / nudge_every, 2)}")
-      print(f"Epoch-{i}, at example-{idx}, avg loss of past {nudge_every} "
             f"examples (BiRNN): {round(loss_bi_rnn.item() / nudge_every, 2)}")
 
-      loss_simple.backward()
       loss_bi_rnn.backward()
 
-      optimizer_simplernn.step()
       optimizer_bi_rnn.step()
 
-      loss_simple = 0
       loss_bi_rnn = 0
 
-      simpe_model.zero_grad()
       bi_rnn_model.zero_grad()
