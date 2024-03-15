@@ -1,121 +1,114 @@
-import torch
-import torch.nn as nn
-import string
 import time
-import unidecode
-import matplotlib.pyplot as plt
+import torch 
+import torch.nn as nn
+from torch.utils.data import DataLoader
+from playsound import playsound
 
-from utils import char_tensor, random_training_set, time_since, random_chunk, CHUNK_LEN
-from evaluation import compute_bpc
-from model.model import LSTM
+from models.SimpleRNN import SimpleRNN
+from data_loading.StressDataset import StressDataset
+from data_loading.transforms import transform1, target_transform
+from data_loading.utils import pad_x_tensors
+from evaluation import evaluate_model
+from statics import DEVICE, SEED, Notation
 
-"""
-I get this file from assignment 3, deleted some functions. 
-Now the most relevant thing is `train` fucntion. 
-Later on we might borrow something from `tuner` and `custom_train` for hyperparam tuning. 
-"""
-
-
-def train(decoder, decoder_optimizer, inp, target):
-    """
-    We need to adapt this function, things to consider: 
-    -> how is the loss computed? Is it computed from the output of the last token? Or is it computed from the pooled output of each token?
-       More on this see textbook page 193 near the end of the page.
-    """
-    # hidden, cell = decoder.init_hidden()
-    # decoder.zero_grad()
-    # loss = 0
-    # criterion = nn.CrossEntropyLoss()
-
-    # for c in range(CHUNK_LEN):
-    #     output, (hidden, cell) = decoder(inp[c], (hidden, cell))
-    #     # `output` of shape [1, 100]
-    #     # `target[c].view(1)` of shape [1] --> index of target char
-    #     # nn.CrossEntropyLoss() 
-    #     # -> will apply softmax to `output` before computing loss
-    #     # -> and will compare the output with `target[c].view(1)` (which is the index of target char)
-    #     loss += criterion(output, target[c].view(1))
-
-    # # nudge params per chunk
-    # loss.backward()
-    # decoder_optimizer.step()
-
-    # return loss.item() / CHUNK_LEN
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
 
 
-# def tuner(n_epochs=3000, print_every=100, plot_every=10, 
-#           # params of model
-#           hidden_size=128, 
-#           n_layers=2,
-#           lr=0.005, 
-#           # params of generate()
-#           start_string='A', 
-#           prediction_length=100, 
-#           temperature=0.8
-#           ):
-#         # YOUR CODE HERE
-#         #     TODO:
-#         #         1) Implement a `tuner` that wraps over the training process (i.e. part
-#         #            of code that is ran with `default_train` flag) where you can
-#         #            adjust the hyperparameters
-#         #         2) This tuner will be used for `custom_train`, `plot_loss`, and
-#         #            `diff_temp` functions, so it should also accomodate function needed by
-#         #            those function (e.g. returning trained model to compute BPC and
-#         #            losses for plotting purpose).
+def train(model, isRNN, train_dataloader, optimizer, criterion, **kwargs): 
+  """
+  Training loop of one epoch.
+  Exclude hyperparams as many as possible (they go into `tuner` function).
+  Some hyperparams have to be included for the `forward` method of model, eg. `hidden_size` for RNN,
+  they are passed as kwargs.
+  """
+  epoch_loss = 0
 
-#         ################################### STUDENT SOLUTION #######################
-#         all_characters = string.printable
-#         n_characters = len(all_characters)
+  for idx, (x, y, seq_lengths) in enumerate(train_dataloader):   
+    assert len(x.size()) == 2, "In training loop, please do batch training; x should be a 2D tensor."
 
-#         decoder = LSTM(n_characters, hidden_size, n_characters, n_layers)   
-#         decoder_optimizer = torch.optim.Adam(decoder.parameters(), lr=lr)
+    batch_loss = 0
 
-#         start = time.time()
-#         all_losses = []
-#         loss_avg = 0
+    x = x.to(DEVICE)
+    y = y.to(DEVICE)
+    seq_lengths = seq_lengths.to(DEVICE)
 
-#         for epoch in range(1, n_epochs+1):
-#             loss = train(decoder, decoder_optimizer, *random_training_set())    
-#             loss_avg += loss
+    if isRNN: 
+      N, _ = x.size()   
+      hidden_size = kwargs.get('hidden_size', None)
+      h_0 = model.init_hidden((1, N, hidden_size)).to(DEVICE)
+      out, h_n = model(x, h_0, seq_lengths)
+    else: 
+      return None  # TODO: [Ruilin] transformer / FFWD
 
-#             if epoch % print_every == 0:
-#                 print('[{} ({} {}%) {:.4f}]'.format(time_since(start), epoch, epoch/n_epochs * 100, loss))
-#                 print(generate(decoder, start_string, prediction_length, temperature=temperature), '\n')            # !!!!
+    batch_loss = criterion(out, y)
+    epoch_loss += batch_loss.item()
 
-#             if epoch % plot_every == 0:
-#                 all_losses.append(loss_avg / plot_every)
-#                 loss_avg = 0
+    batch_loss.backward()
+    optimizer.step()
+    optimizer.zero_grad()
 
-#         # perhaps return the trained model
-#         return decoder, all_losses
-#         ############################################################################
+  return epoch_loss
 
 
-# def custom_train(hyperparam_list):
-#     """
-#     Train model with X different set of hyperparameters, where X is 
-#     len(hyperparam_list).
 
-#     Args:
-#         hyperparam_list: list of dict of hyperparameter settings
+def tuner(dataset, 
+          model=SimpleRNN, isRNN=True,  # RNN has diff init way and diff forward method
+          # --- for training loop ---
+          n_epochs=3, batch_size=300, learning_rate=0.0001,  
+          # --- for model shape --- 
+          embedding_dim=64,
+          output_size=3,
+          # --- [RNN only] ---
+          hidden_size=128, 
+          # --- for optimizer ---
+          optimizer=torch.optim.SGD,
+          # n_layers=2,   # stacked RNN not ready yet
+          # --- for reporting ---
+          # print_every=100, plot_every=10, 
+          ):
+  """
+  A wrapper that wraps hyperparameters and pass them to training loop. 
+  """
+  vocab_size = dataset.get_vocab_size()
+  dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=pad_x_tensors)
 
-#     Returns:
-#         bpc_dict: dict of bpc score for each set of hyperparameters.
-#     """
-#     TEST_PATH = './data/dickens_test.txt'
-#     string = unidecode.unidecode(open(TEST_PATH, 'r').read())   # len is 5476
-#     # YOUR CODE HERE
-#     #     TODO:
-#     #         1) Using `tuner()` function, train X models with different
-#     #         set of hyperparameters and compute their BPC scores on the test set.
+  if isRNN: 
+    model = model(vocab_size, embedding_dim, hidden_size, output_size).to(DEVICE)
+  else: 
+    return None  # TODO: [Ruilin] init transformer / FFWD
 
-#     ################################# STUDENT SOLUTION ##########################
-#     bpc_dict = {}
+  optimizer = optimizer(model.parameters(), lr=learning_rate)
+  criterion = nn.CrossEntropyLoss(reduction='sum')   # so that batch loss is the sum of all losses of the batch
 
-#     for idx, hyperparam_dict in enumerate(hyperparam_list):
-#         decoder, _ = tuner(**hyperparam_dict)
-#         bpc_dict[f"hyperparamset-{idx}"] = compute_bpc(decoder, string)
+  start_time = time.time()
+  losses_by_epoch = []
+  for epoch in range(n_epochs):
+    epoch_loss = train(model, isRNN, dataloader, optimizer, criterion, 
+                      hidden_size=hidden_size)
 
-   
-#     return bpc_dict
-#     #############################################################################
+    losses_by_epoch.append(epoch_loss)
+    # TODO: [Ellie] log this info to a file
+    print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+
+  end_time = time.time()
+  elapsed_time = end_time - start_time
+
+  return model, losses_by_epoch, elapsed_time
+
+# TODO: [Ellie/Ruilin] how to make `evaluation` compatible for all occasions? perhaps something look like `train`? 
+#  TODO: [Ellie] after `tuner`, evaluate model on dev set
+# TODO: [Ellie] after `tuner`, perhaps save the trained model? 
+# -> likely helpful for debugging, and for comparing models, and for caputuring the best model
+# TODO: [Ellie] inside `tuner`,  log hyperparam info? something like below? 
+# -> helpful for comparing models, analyze, reproduce, etc.
+
+
+# max_length = 15
+# print(f"{'Took'.ljust(max_length)}: {elapsed_time} seconds;")
+# print(f"{'Device'.ljust(max_length)}: {DEVICE};")
+# print(f"{'Epoch'.ljust(max_length)}: {epoch};")
+# print(f"{'Learning rate'.ljust(max_length)}: {learning_rate};")
+# print(f"{'Batch size'.ljust(max_length)}: {batch_size};")
+# print(f"{'Embedding dim'.ljust(max_length)}: {embedding_dim};")
+# print(f"{'Hidden size'.ljust(max_length)}: {hidden_size};")
