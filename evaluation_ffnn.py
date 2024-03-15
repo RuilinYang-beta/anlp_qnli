@@ -1,8 +1,9 @@
 import torch
 from sklearn.metrics import accuracy_score, f1_score
-from statics import DEVICE  
+from statics import DEVICE 
+import numpy as np 
 
-def evaluate_model(model, h_0, dataset, criterion):
+def evaluate_model(model, dataset, criterion): #deleted h_0 for FFNN
     """
     Args:
         model: model to evaluate
@@ -22,18 +23,21 @@ def evaluate_model(model, h_0, dataset, criterion):
     num_samples = 0
 
     # for x, y in dataset:
-    for idx, (x, y) in enumerate(dataset):    
+    for idx, (x, y) in enumerate(dataset):
         x = x.to(DEVICE) #
         y = y.to(DEVICE) #
         # print(f"x.size(): {x.size()}; y.size(): {y.size()}")
 
         with torch.no_grad():
-            output, _ = model(x, h_0)
+            output = model(x) #changed input for FFNN
             loss = criterion(output, y)
             total_loss += loss.item()
-            predicted = torch.argmax(output, dim=0)
+            predicted = torch.argmax(output, dim=1)
 
             # Calculate predictions
+            #print("x shape: ", x.shape)
+            #print("y shape: ", y.shape)
+            #print("predicted shape: ", predicted.shape)
             correct += (predicted == y).sum().item() #
             if y.dim() == 0:
                 total += 1  # Increment total by 1 if y is a scalar tensor
@@ -49,6 +53,14 @@ def evaluate_model(model, h_0, dataset, criterion):
     avg_loss = total_loss / num_samples
 
     accuracy = correct / total
+
+    print("All labels: ", all_labels)
+    print("All preds: ", all_preds)
+
+    #for some reason F1_score didn't work if I didn't turn them into numpy arrays???
+    all_labels = torch.cat(all_labels).cpu().numpy()
+    all_preds = torch.cat(all_preds).cpu().numpy()
+
     f1_macro = f1_score(all_labels, all_preds, average='macro')
 
     return avg_loss, accuracy, f1_macro
