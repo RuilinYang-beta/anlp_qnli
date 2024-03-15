@@ -15,10 +15,18 @@ class FeedForwardNN(nn.Module):
         self.fc2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, input):
-        'returns: tensor of shape (batch_size,output_size->i.e.number of classes)'
-        #Embedding lookup?
+        # --- for batched data --- (we use it in training to speed up)
+        # input:            (N, L)
+        # embedded:         (N, L, embedding_dim)
+        # embedded_avg:     (N, embedding_dim)
+        # out:              (N, output_size)
+        # --- for single data --- (we use it for evaluation )
+        # input:            (L)
+        # embedded:         (L, embedding_dim)
+        # embedded_avg:     (embedding_dim)
+        # out:              (output_size)
         embedded = self.embedding(input)
-        embedded_avg = torch.mean(embedded, dim=1)
+        embedded_avg = torch.mean(embedded, dim=-2)  # use relative dimension to handle both single and batched data
         out = self.relu(self.fc1(embedded_avg))
         out = self.fc2(out)
         return out

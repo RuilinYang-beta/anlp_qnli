@@ -2,7 +2,10 @@ import torch
 from sklearn.metrics import accuracy_score, f1_score
 from statics import DEVICE  
 
-def evaluate_model(model, h_0, dataset, criterion):
+def evaluate_model(model, dataset, criterion, 
+                    isRNN=False, isFFNN=False, isTransformer=False, 
+                    **kwargs  # model-specific hyperparams for forward method
+                    ):
     """
     Args:
         model: model to evaluate
@@ -10,6 +13,14 @@ def evaluate_model(model, h_0, dataset, criterion):
         dataset: an instance of `Dataset` class
         criterion: loss function    
     """
+
+    model_flag = sum([isRNN, isFFNN, isTransformer])
+    assert model_flag == 1, "Please specify one and only one model type."
+
+    if isRNN: 
+        hidden_size = kwargs.get('hidden_size', None)
+        assert hidden_size is not None, "hidden_size is required for RNN model"
+        h_0 = model.init_hidden((1, hidden_size)).to(DEVICE)
 
     model.eval()
     total_loss = 0
@@ -25,10 +36,13 @@ def evaluate_model(model, h_0, dataset, criterion):
     for idx, (x, y) in enumerate(dataset):    
         x = x.to(DEVICE) #
         y = y.to(DEVICE) #
-        # print(f"x.size(): {x.size()}; y.size(): {y.size()}")
 
         with torch.no_grad():
-            output, _ = model(x, h_0)
+            # call the model-specific forward method
+            if isRNN: 
+                output, _ = model(x, h_0)
+            if isFFNN:
+                output = model(x)
             loss = criterion(output, y)
             total_loss += loss.item()
             predicted = torch.argmax(output, dim=0)

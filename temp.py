@@ -2,10 +2,11 @@ import time
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from playsound import playsound
+# from playsound import playsound
 
 from training_helper import tuner
 from models.SimpleRNN import SimpleRNN
+from models.FeedForwardNN import FeedForwardNN
 from data_loading.StressDataset import StressDataset
 from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
@@ -29,7 +30,15 @@ train_set = StressDataset('data/train.json', Notation.ORIGINAL_CHAR, forEval=Fal
 # ================== Train with certain hyperparam ==================
 # This function will train a model with the below default hyperparams
 # see `training_helper.py`
-model, losses_by_epoch, elapsed_time = tuner(dataset=train_set)
+
+# change the models and flags there, the flags is also shared to evaluation function
+model = FeedForwardNN
+isRNN = False
+isFFNN = True
+isTransformer = False
+
+model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model=model, 
+                                            isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer)
 
 # def tuner(dataset, 
 #           model=SimpleRNN, isRNN=True,  # RNN has diff init way and diff forward method
@@ -69,9 +78,11 @@ print("------------------ eval the freshly trained model ------------------")
 
 # evaluate on training set -> supposedly performs better than on dev
 loss, accuracy, f1_macro = evaluate_model(model, 
-                                          model.init_hidden((1, hidden_size)).to(DEVICE), 
                                           train_set,  # -> change to train_data_set
-                                          criterion)
+                                          criterion,
+                                          isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+                                          hidden_size=hidden_size
+                                          )
 print(f"[train] Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
 
 # evaluate on dev set
@@ -81,7 +92,9 @@ dev_set = StressDataset('data/dev.json', Notation.ORIGINAL_CHAR, forEval=True,
                         vocab=train_set.get_vocab())
 
 loss, accuracy, f1_macro = evaluate_model(model, 
-                                          model.init_hidden((1, hidden_size)).to(DEVICE), 
                                           dev_set, 
-                                          criterion)
+                                          criterion,
+                                          isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+                                          hidden_size=hidden_size
+                                          )
 print(f"[dev]   Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
