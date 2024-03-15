@@ -44,7 +44,7 @@ train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, coll
 # ================== hyperparams / params ==================
 
 # hyper params for training loop
-epoch = 5
+epoch = 500
 learning_rate = 0.0001
 
 # hyper params for model
