@@ -22,7 +22,8 @@ class StressDataset(Dataset):
     Args: 
     - filepath: path to the json file
     - notation: one of the Notation enum
-    - forEval: whether the dataset is for evaluation or not
+    - forEval: whether the dataset is for evaluation or not; 
+              if False, `vocab` should be None; if True, `vocab` should be provided
     - transform: transform to apply to the data
     - target_transform: transform to apply to the target
     - vocab: vocabulary to use for the dataset, 
