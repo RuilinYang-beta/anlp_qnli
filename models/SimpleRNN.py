@@ -36,7 +36,10 @@ class SimpleRNN(nn.Module):
 
 
         # ===== from indices of one-hot to embedding =====
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        # the embeddings at index 0 is for padding token, we don't need to update it 
+        # see `data_loading/StressDataset.py` that the token at index 0 of vocab is a padding token
+        # see also `data_loading/utils.py` for how we pad the sequences for dataloader batched data
+        self.embedding = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)
 
         # ===== RNN layer =====
         # off-the-shelf RNN layer, see https://pytorch.org/docs/stable/generated/torch.nn.RNN.html
