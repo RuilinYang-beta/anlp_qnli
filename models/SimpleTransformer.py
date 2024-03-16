@@ -11,8 +11,7 @@ torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 
-# TODO: safeguard when batch training, need seq_lengths
-# TODO: handle single example training 
+# TODO: dropout thing
 
 class PositionalEmbeddings(nn.Module):
   """
@@ -43,20 +42,23 @@ class Head(nn.Module):
     self.value = nn.Linear(embedding_dim, head_size, bias=False)
 
   def forward(self, input, seq_lengths=None):
-    # input: (N, L, embedding_dim), N is batch size, L is the longest sequence length of this batch
-    # q, k, v: (N, L, head_size)
-    # output: (N, L, head_size)
+    # N is batch size, L is the longest sequence length of this batch
+    # input: (N, L, embedding_dim)  |  (L, embedding_dim)
+    # q, k, v: (N, L, head_size)    |  (L, head_size)
+    # output: (N, L, head_size)     |  (L, head_size)
 
     q = self.query(input)
     k = self.key(input)
     v = self.value(input)
 
     if input.dim() == 2: 
-      # unbatched training
-      return None
+
+      weights = torch.mm(q, k.t()) / (k.size(-1) ** 0.5)  # (L, L) 
+      weights = F.softmax(weights, dim=-1)                # (L, L)
+      out = torch.mm(weights, v)                          # (L, head_size)
+      return out
 
     elif input.dim() == 3:  # for batch training, (N, L, embedding_dim)
-      assert seq_lengths is not None, "seq_lengths should not be None for batch training"
 
       # mask out the padding tokens
       indices = torch.arange(input.size(1)).unsqueeze(0)           # (1, L)
@@ -89,7 +91,7 @@ class MultiHead(nn.Module):
     self.dropout = nn.Dropout(dropout)
 
   def forward(self, x_tensors, seq_lengths=None):
-    # x_tensors:                (N, L, embedding_dim)
+    # x_tensors:                (N, L, embedding_dim)     |  (L, embedding_dim) 
     # h(x_tensors, seq_length): (N, L, head_size)
     # out:                      (N, L, head_size * num_heads)
     # final_out:                (N, L, embedding_dim) with 0s for padding tokens
@@ -138,7 +140,8 @@ class Block(nn.Module):
     self.ln2 = nn.LayerNorm(embedding_dim)
 
   def forward(self, x_tensors, seq_lengths):
-    # x_tensors, normed, after_attention, after_ffwd: (N, L, embedding_dim)
+    # batch training:           x_tensors, normed, after_attention, after_ffwd: (N, L, embedding_dim)
+    # single example training:  x_tensors, normed, after_attention, after_ffwd: (L, embedding_dim)
     normed = self.ln1(x_tensors)
     after_attention = normed + self.sa(normed, seq_lengths)
     
@@ -160,34 +163,45 @@ class SimpleTransformer(nn.Module):
     self.decode = nn.Linear(embedding_dim, output_size)
 
   def forward(self, input, seq_lengths=None):
-    # input: (N, L), N is batch size, L is the longest sequence length of this batch
+    if input.dim() == 2:
+      assert seq_lengths is not None, "seq_lengths should not be None for batch training"
 
-    # (N, L, embedding_dim)
+    # N is batch size, L is the longest sequence length of this batch
+    # batch training  |  single example training (eval only)
+
+    # input: (N, L)          |  (L)
+    # (N, L, embedding_dim)  |  (L, embedding_dim)  
     tok_emb = self.token_embedding_table(input)           
-    # (L, embedding_dim)
-    pos_emb = self.positional_embedding_table(torch.arange(input.size(1)).to(input.device))  
-    # (N, L, embedding_dim)
-    x_tensors = tok_emb + pos_emb.unsqueeze(0)  
-    # (N, L, embedding_dim)
+    # (L, embedding_dim)     
+    pos_emb = self.positional_embedding_table(torch.arange(input.size(-1)).to(input.device))  
+    # (N, L, embedding_dim)  |  (L, embedding_dim)
+    x_tensors = tok_emb + pos_emb
+    # (N, L, embedding_dim)  |  (L, embedding_dim)
     after_blocks, _ = self.blocks(x_tensors, seq_lengths)    
-    # (N, L, embedding_dim)
+    # (N, L, embedding_dim)  |  (L, embedding_dim)
     after_norm = self.ln_f(after_blocks)
-    # (N, L, output_size)
+    # (N, L, output_size)    |  (L, output_size)
     output = self.decode(after_norm)
 
-    assert seq_lengths is not None, "seq_lengths should not be None for batch training"
+    if output.dim() == 2: 
+      final_out = torch.sum(output, dim=0) / output.size(0)  # (output_size)
+      return final_out
+      
+    elif output.dim() == 3:  # for batch training, (N, L, embedding_dim)
 
-    # mask out the padding tokens
-    indices = torch.arange(output.size(1)).unsqueeze(0)           # (1, L)
-    indices = indices.expand(output.size(0), -1).to(output.device) # (N, L)
+      assert seq_lengths is not None, "seq_lengths should not be None for batch training"
 
-    mask = indices >= seq_lengths.unsqueeze(1)                   # (N, L)
-    mask = mask.unsqueeze(-1)                                    # (N, L, 1)
+      # mask out the padding tokens
+      indices = torch.arange(output.size(1)).unsqueeze(0)            # (1, L)
+      indices = indices.expand(output.size(0), -1).to(output.device) # (N, L)
 
+      mask = indices >= seq_lengths.unsqueeze(1)                   # (N, L)
+      mask = mask.unsqueeze(-1)                                    # (N, L, 1)
 
-    output = output.masked_fill(mask, 0)   # (N, L, output_size)
+      output = output.masked_fill(mask, 0)   # (N, L, output_size)
 
-    final_out = torch.sum(output, dim=1) / seq_lengths.unsqueeze(1)  # (N, output_size)
+      final_out = torch.sum(output, dim=1) / seq_lengths.unsqueeze(1)  # (N, output_size)
 
-    return final_out  
-
+      return final_out  
+    else: 
+      assert False, "input should be either 2D or 3D tensor."

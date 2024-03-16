@@ -5,8 +5,9 @@ from torch.utils.data import DataLoader
 # from playsound import playsound
 
 from training_helper import tuner
-from models.SimpleRNN import SimpleRNN
 from models.FeedForwardNN import FeedForwardNN
+from models.SimpleRNN import SimpleRNN
+from models.SimpleTransformer import SimpleTransformer
 from data_loading.StressDataset import StressDataset
 from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
@@ -28,57 +29,56 @@ train_set = StressDataset('data/train.json', Notation.ORIGINAL_CHAR, forEval=Fal
 # print((x, y))
 
 # ================== Train with certain hyperparam ==================
-# This function will train a model with the below default hyperparams
-# see `training_helper.py`
+# Train a model with default hyperparams in `tuner` function in `training_helper.py`
 
+# --- flags ---
 # change the models and flags there, the flags is also shared to evaluation function
-model = FeedForwardNN
+# later on we can get these flags from terminal arguments
+model = SimpleTransformer
+isFFNN = False
 isRNN = False
-isFFNN = True
-isTransformer = False
+isTransformer = True
 
+# --- model name for saving it ---
+model_name = "transformer"    
+
+# --- in case RNN, hidden_size is needed ---
+hidden_size=128
+
+# there's more hyperparams in `tuner` function in `training_helper.py`
 model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model=model, 
+                                            hidden_size=hidden_size,
                                             isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer)
 
-# def tuner(dataset, 
-#           model=SimpleRNN, isRNN=True,  # RNN has diff init way and diff forward method
-#           # --- for training loop ---
-#           n_epochs=3, batch_size=300, learning_rate=0.0001,  
-#           # --- for model shape --- 
-#           embedding_dim=64,
-#           output_size=3,
-#           # --- [RNN only] ---
-#           hidden_size=128, 
-#           # --- for optimizer ---
-#           optimizer=torch.optim.SGD,
-#           # n_layers=2,   # stacked RNN not ready yet
-#           # --- for reporting ---
-#           # print_every=100, plot_every=10, 
-#           ):
+print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 
-# # ================== save model ==================
-# # Specify the file path where you want to save the model
-# model_path = 'trained_models/simple_rnn_b.pth'
+# ================== save model ==================
+# Specify the file path where you want to save the model
+model_path = f'trained_models/{model_name}.pth'
 
-# # Save both model architecture and parameters
-# torch.save(model, model_path)
+# Save both model architecture and parameters
+torch.save(model, model_path)
 
-# # To load the model back later, you can use:
-# # model = torch.load(model_path)
+# To load the model back later, you can use:
+# model = torch.load(model_path)
 
 # playsound('temp_sound/mammal.mp3')  # play sound to notify the end of training
 
 
 # ================== dummy eval ==================
 
-hidden_size=128
+# TODO: [Ellie] consider encapsulate these two functions into a bigger eval function 
+#       and put it inside your hyperparam tuning function,
+#       because it has so many common hyperparams with `tuner` function
+
+
 criterion = nn.CrossEntropyLoss(reduction='sum')
 
 print("------------------ eval the freshly trained model ------------------")
 
 # evaluate on training set -> supposedly performs better than on dev
 loss, accuracy, f1_macro = evaluate_model(model, 
-                                          train_set,  # -> change to train_data_set
+                                          train_set,  
                                           criterion,
                                           isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
                                           hidden_size=hidden_size

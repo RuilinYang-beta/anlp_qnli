@@ -41,8 +41,13 @@ def evaluate_model(model, dataset, criterion,
             # call the model-specific forward method
             if isRNN: 
                 output, _ = model(x, h_0)
+
             if isFFNN:
                 output = model(x)
+
+            if isTransformer:
+                output = model(x)
+                
             loss = criterion(output, y)
             total_loss += loss.item()
             predicted = torch.argmax(output, dim=0)
