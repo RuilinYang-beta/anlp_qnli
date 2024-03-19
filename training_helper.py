@@ -112,4 +112,3 @@ def tuner(dataset,
 # print(f"{'Batch size'.ljust(max_length)}: {batch_size};")
 # print(f"{'Embedding dim'.ljust(max_length)}: {embedding_dim};")
 # print(f"{'Hidden size'.ljust(max_length)}: {hidden_size};")
-
