@@ -34,21 +34,49 @@ train_set = StressDataset('data/train.json', Notation.ORIGINAL_CHAR, forEval=Fal
 # --- flags ---
 # change the models and flags there, the flags is also shared to evaluation function
 # later on we can get these flags from terminal arguments
-model = SimpleTransformer
-isFFNN = False
+model = FeedForwardNN
 isRNN = False
-isTransformer = True
+isFFNN = True
+isTransformer = False
 
 # --- model name for saving it ---
-model_name = "transformer"    
+save_model = False
+model_name = "simple_rnn_2"    
 
-# --- in case RNN, hidden_size is needed ---
+# === supported hyperparams ===
+# --- for all models ---
+n_epochs=1
+batch_size=300
+learning_rate=0.0001 
+optimizer=torch.optim.SGD
+embedding_dim=128
+output_size=3
+# --- model specific, please comment and uncomment to get the things you need ---
+# => for RNN:
+# hidden_size=128
+# num_layers=1
+# bidirectional=True
+# dropout =0.2
+# => for FFNN:
 hidden_size=128
+num_layers=1
+# => for Transformer:
+# num_blocks=4
+# num_heads=4
+# dropout =0.2
 
-# there's more hyperparams in `tuner` function in `training_helper.py`
+
 model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model=model, 
-                                            hidden_size=hidden_size,
-                                            isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer)
+                                isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+                                n_epochs=n_epochs, batch_size=batch_size, learning_rate=learning_rate, optimizer=optimizer, 
+                                embedding_dim=embedding_dim, output_size=output_size, 
+                                # for RNN
+                                # hidden_size=hidden_size, num_layers=num_layers, bidirectional=bidirectional, dropout=dropout,
+                                # for FFNN
+                                hidden_size=hidden_size, num_layers=num_layers,
+                                # for Transformer
+                                # num_blocks=num_blocks, num_heads=num_heads, dropout=dropout,
+                                )
 
 print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 
@@ -57,7 +85,8 @@ print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 model_path = f'trained_models/{model_name}.pth'
 
 # Save both model architecture and parameters
-torch.save(model, model_path)
+if save_model: 
+  torch.save(model, model_path)
 
 # To load the model back later, you can use:
 # model = torch.load(model_path)
@@ -81,7 +110,10 @@ loss, accuracy, f1_macro = evaluate_model(model,
                                           train_set,  
                                           criterion,
                                           isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+<<<<<<< HEAD
+=======
                                           hidden_size=hidden_size
+>>>>>>> main
                                           )
 print(f"[train] Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
 
@@ -95,6 +127,9 @@ loss, accuracy, f1_macro = evaluate_model(model,
                                           dev_set, 
                                           criterion,
                                           isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+<<<<<<< HEAD
+=======
                                           hidden_size=hidden_size
+>>>>>>> main
                                           )
 print(f"[dev]   Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")

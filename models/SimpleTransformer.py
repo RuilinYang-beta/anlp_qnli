@@ -10,8 +10,7 @@ from statics import SEED
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-
-# TODO: dropout thing
+MAX_SEQ_LENGTH = 512  # max sequence length for positional embeddings
 
 class PositionalEmbeddings(nn.Module):
   """
@@ -60,7 +59,7 @@ class Head(nn.Module):
 
     elif input.dim() == 3:  # for batch training, (N, L, embedding_dim)
 
-      # mask out the padding tokens
+      # mask out the padding tokens to compute correct attention weights
       indices = torch.arange(input.size(1)).unsqueeze(0)           # (1, L)
       indices = indices.expand(input.size(0), -1).to(input.device) # (N, L)
 
@@ -122,9 +121,6 @@ class Block(nn.Module):
   - normalization
   - feedforward
 
-  Requires: 
-  - `embedding_dim` is divisible by `num_heads`
-
   Args: 
   - `embedding_dim`: the dimension of the input embeddings
   - `num_heads`: the number of heads to use in the multi-head attention
@@ -156,8 +152,7 @@ class SimpleTransformer(nn.Module):
     # token at index 0 of vocab is padding token
     # see `data_loading/StressDataset.py` and `data_loading/utils.py` 
     self.token_embedding_table = nn.Embedding(vocab_size, embedding_dim, padding_idx=0)  
-    # more than enough to cover training data seq lengths 
-    self.positional_embedding_table = PositionalEmbeddings(512, embedding_dim)
+    self.positional_embedding_table = PositionalEmbeddings(MAX_SEQ_LENGTH, embedding_dim)
     self.blocks = CustomSequential(*[Block(embedding_dim, num_heads, dropout) for _ in range(num_blocks)])
     self.ln_f = nn.LayerNorm(embedding_dim) # final layer norm
     self.decode = nn.Linear(embedding_dim, output_size)

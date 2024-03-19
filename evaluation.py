@@ -17,11 +17,6 @@ def evaluate_model(model, dataset, criterion,
     model_flag = sum([isRNN, isFFNN, isTransformer])
     assert model_flag == 1, "Please specify one and only one model type."
 
-    if isRNN: 
-        hidden_size = kwargs.get('hidden_size', None)
-        assert hidden_size is not None, "hidden_size is required for RNN model"
-        h_0 = model.init_hidden((1, hidden_size)).to(DEVICE)
-
     model.eval()
     total_loss = 0
     all_preds = []
@@ -40,7 +35,7 @@ def evaluate_model(model, dataset, criterion,
         with torch.no_grad():
             # call the model-specific forward method
             if isRNN: 
-                output, _ = model(x, h_0)
+                output, _ = model(x)
 
             if isFFNN:
                 output = model(x)
