@@ -1,5 +1,17 @@
 # What's new
 
+## the omnipotent `temp.py`
+
+- `python temp.py`
+
+It's making use of `training_helper.py`. FFNN, RNN, Transformer they all work fine now.
+All supported hyperparams are listed in the comments of this file.
+
+## RNN family
+
+- We can have BiRNN and StackedRNN by passing flags to `SimpleRNN` class, see `temp.py` and `models/SimpleRNN.py`.
+- RNN don't need h_0 to call `forward` now, this leads to less cluttered code -> PyTorch will handle it
+
 ## `training_helper.py` for training and hyperparam tuning
 
 In this file,
@@ -8,25 +20,7 @@ In this file,
 - `tuner` is a bunch of hyperparams, epoch loops, inside the epoch loop it calls `train`
   The purpose of `tuner` is to encapsulate the hyperparams, and decouple `train` from hyperparams as much as possible.
 
-In some situation it's inevitable, eg. in `train`, the `forward` method of SimpleRNN requires `hidden_size` hyperparam. To avoid clutter, these model-specific hyperparams are caputured in `**kwargs`, so that the positional arguments / named arguments of `train` are the ones that are common across all models.
-
 There is detailed TODOs in the comments of this file, they are assigned to either Ellie or Ruilin.
-
-## train and evaluate model in `temp.py`
-
-- `python temp.py`
-
-It's making use of `training_helper.py`
-
-## train and evaluate model in `temp_simplernn_playground.py`
-
-- `python temp_simplernn_playground.py` to train a simple rnn, and save the trained model
-
-It's robust to play around hyperparams now, but slow, not recommended. Will be deprecated After BiRNN is safely integrated.
-
-## load and evaluate trained model `python temp_eval_trained_model.py`
-
-It's self-descriptive.
 
 # what we have now
 
@@ -34,12 +28,7 @@ It's self-descriptive.
 
 All files starts with "temp\_" are for dev purposes, they will be cleaned up gradually and won't be a part of the final delivery
 
-- `temp.py` to play with SimpleRNN with Dataset and Dataloader, and save the trained model
-- `temp_simplernn_playground.py` to play with SimpleRNN in old way (see above "What's new" section), and save the trained model
-- `temp_eval_trained_model.py` to load and evaluate a trained model, it's also possible to continue training the model
-
-- `temp_birnn_playground.py` to play with BiRNN, something might be broken, we will fix it later
-- `temp_evals.py` is a demo of evaluation function
+- `temp.py` to play with all models and all supported hyperparameters, optionally save the model, and evaluate model
 - `temp_pytorch.py` to play with your GPU
 
 ## `models/`
@@ -67,21 +56,21 @@ Data analysis things.
 
 Contains data.
 
+## scripts
+
+One-time scripts of some data wrangling, you don't need to care about it.
+
 ## Other files in root directory
 
+- `training_helper.py`: contain the `train` function for training 1 epoch, a `tuner` function calling train with diff hyperparams; later on likely will contain more things for hyperparam tuning and plotting
 - `evaluation.py`: contains the evaluation function.
-- `qnli.py`: copied the structure from assignments, maybe good for final delivery, who knows?
-- `script_augment_train_data.py`: augment training data by swapping s1 s2 (for all 4 notations), -> perhaps better move to some .ipynb file
-- `statics.py`: containing statics, will be deprecated when we fully migrate to Dataloader way, now it's still useful for two temp_playground file
-- `training_helper.py`: likely will contain a function for training loop, a function for evaluating, a function for hyperparam tuning, a function for plotting, a function for timing, etc..
-- `utils.py` will be deprecated. More info see the file.
+- `statics.py`: containing statics
+- `qnli.py`: our final entry point of the code
+- `utils.py`: functions there have all migrated, but please keep it here for now in case some scripts need it.
 
 # what to do next?
 
-- [high] Hyperparam tuning
-- [high] Integrate BiRNN / StackRNN to simpleRNN
-- [high] clean code: training always batch, should eval be unbatched or batched?
-- [high] unified Evaluation function for all models
+- [high] Hyperparam tuning -> it's a big time consuming thing
 - [mid] NEKG embeddings
 - [mid] error analysis -> can play with `simple_rnn_b_best_noPack.pth` but don't be too serious
 - [mid] plotting -> make paper look nice
