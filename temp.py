@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 # from playsound import playsound
 
-from training_helper import tuner
+from training_helper import tuner, generate_hyperparam_set
 from models.FeedForwardNN import FeedForwardNN
 from models.SimpleRNN import SimpleRNN
 from models.SimpleTransformer import SimpleTransformer
@@ -37,7 +37,7 @@ train_set = StressDataset('data/train.json', Notation.ORIGINAL_CHAR, forEval=Fal
 # --- flags ---
 # change the models and flags there, the flags is also shared to evaluation function
 # later on we can get these flags from terminal arguments
-model = SimpleRNN
+model_class = SimpleRNN
 
 # --- model name for saving it ---
 save_model = False
@@ -66,18 +66,25 @@ dropout =0.2
 # dropout =0.2
 
 
-model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model_class=model, 
-                                n_epochs=n_epochs, batch_size=batch_size, learning_rate=learning_rate, optimizer=optimizer, 
-                                embedding_dim=embedding_dim, output_size=output_size, 
-                                # for RNN
-                                # hidden_size=hidden_size, num_layers=num_layers, bidirectional=bidirectional, dropout=dropout,
-                                # for FFNN
-                                hidden_size=hidden_size, num_layers=num_layers,
-                                # for Transformer
-                                # num_blocks=num_blocks, num_heads=num_heads, dropout=dropout,
-                                )
+hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
 
-print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
+for hype in hyperparam_sets: 
+  model, losses_by_epoch, elapsed_time = tuner(train_set, model_class, **hype)
+
+print(f"you have successfully reach here!!")
+
+# model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model_class=model, 
+#                                 n_epochs=n_epochs, batch_size=batch_size, learning_rate=learning_rate, optimizer=optimizer, 
+#                                 embedding_dim=embedding_dim, output_size=output_size, 
+#                                 # for RNN
+#                                 # hidden_size=hidden_size, num_layers=num_layers, bidirectional=bidirectional, dropout=dropout,
+#                                 # for FFNN
+#                                 hidden_size=hidden_size, num_layers=num_layers,
+#                                 # for Transformer
+#                                 # num_blocks=num_blocks, num_heads=num_heads, dropout=dropout,
+#                                 )
+
+# print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 
 # # ================== save model ==================
 # # Specify the file path where you want to save the model
@@ -100,25 +107,25 @@ print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 # #       because it has so many common hyperparams with `tuner` function
 
 
-criterion = nn.CrossEntropyLoss(reduction='sum')
+# criterion = nn.CrossEntropyLoss(reduction='sum')
 
-# print("------------------ eval the freshly trained model ------------------")
+# # print("------------------ eval the freshly trained model ------------------")
 
-# evaluate on training set -> supposedly performs better than on dev
-loss, accuracy, f1_macro = evaluate_model(model, 
-                                          train_set,  
-                                          criterion,
-                                          )
-print(f"[train] Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
+# # evaluate on training set -> supposedly performs better than on dev
+# loss, accuracy, f1_macro = evaluate_model(model, 
+#                                           train_set,  
+#                                           criterion,
+#                                           )
+# print(f"[train] Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
 
-# evaluate on dev set
-dev_set = StressDataset('data/dev.json', Notation.ORIGINAL_CHAR, forEval=True,
-                        transform=transform1, 
-                        target_transform=target_transform, 
-                        vocab=train_set.get_vocab())
+# # evaluate on dev set
+# dev_set = StressDataset('data/dev.json', Notation.ORIGINAL_CHAR, forEval=True,
+#                         transform=transform1, 
+#                         target_transform=target_transform, 
+#                         vocab=train_set.get_vocab())
 
-loss, accuracy, f1_macro = evaluate_model(model, 
-                                          dev_set, 
-                                          criterion,
-                                          )
-print(f"[dev]   Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
+# loss, accuracy, f1_macro = evaluate_model(model, 
+#                                           dev_set, 
+#                                           criterion,
+#                                           )
+# print(f"[dev]   Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
