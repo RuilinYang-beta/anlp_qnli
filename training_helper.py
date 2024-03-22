@@ -1,10 +1,13 @@
 import time
 import random
 import math
+import json
+import os
+
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from playsound import playsound
+# from playsound import playsound
 
 from models.SimpleRNN import SimpleRNN
 from models.FeedForwardNN import FeedForwardNN
@@ -24,7 +27,6 @@ def train(model, train_dataloader, optimizer, criterion,
           ): 
   """
   Training loop of one epoch.
-  Exclude hyperparams as many as possible (they go into `tuner` function).
   """
 
   epoch_loss = 0
@@ -60,49 +62,70 @@ def train(model, train_dataloader, optimizer, criterion,
 
 def tuner(dataset, 
           model_class=SimpleRNN, 
-          # --- common hyperparams - for training loop ---
-          n_epochs=1, batch_size=300, learning_rate=0.0001,  
-          optimizer=torch.optim.SGD,
-          # --- common hyperparams - for model shape ---
+          # --- common hyperparams ---
+          batch_size=300, learning_rate=0.0001,  
           embedding_dim=128,
-          output_size=3,      # let's fix it to be 3, we probably don't have time to experiment 2-binary classification
-          dropout=0.2,        # let's fix it to be 0.2, we probably don't have time to experiment
-          # --- [model specific hyperparams] ---
+          # --- model specific hyperparams ---
           hidden_size=128,      # for RNN and FFNN
-          num_layers=1,         # for RNN and FFNN  (TODO: enable FFNN to have stacked layers)
-          bidirectional=False,  # for BiRNN
+          num_layers=1,         # for RNN and FFNN  
           num_blocks=4,         # for Transformer
           num_heads=4,          # for Transformer
+          # --------- other concerns ---------
+          log=False, filename=None
           ):
   """
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
+  # ------ fixed hyperparams - we don't have time to experiment ------
+  n_epochs = 1   
+  optimizer = torch.optim.SGD   
+  output_size = 3
+  dropout = 0.2
+  # ------------------------------------------------------------------
 
   vocab_size = dataset.get_vocab_size()
   dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=pad_x_tensors)
 
   # encapsulate model creation logic in `ModelFactory`
-  model = ModelFactory.init_model(model_class, 
-                      vocab_size, 
-                      embedding_dim=embedding_dim,
-                      output_size=output_size,
-                      dropout=dropout,
-                      hidden_size=hidden_size,
-                      num_layers=num_layers,
-                      bidirectional=bidirectional,
-                      num_blocks=num_blocks,
-                      num_heads=num_heads
-                      )
+  model, chosen_hyperparams = ModelFactory.init_model(model_class, 
+                              vocab_size, 
+                              embedding_dim=embedding_dim,
+                              hidden_size=hidden_size,
+                              num_layers=num_layers,
+                              num_blocks=num_blocks,
+                              num_heads=num_heads,
+                              output_size=output_size,
+                              dropout=dropout
+                            )
 
   num_params = sum(p.numel() for p in model.parameters())
-  print(f"Model has {num_params:,} parameters.")    # would this be sth interesting to log?
+
+  hyperparams = {
+                  "model_class": model_class.__name__,
+                  "n_epochs": n_epochs,
+                  "batch_size": batch_size, 
+                  "learning_rate": learning_rate,
+                  "embedding_dim": embedding_dim,
+                  **chosen_hyperparams,
+                }
+
+  print(json.dumps(hyperparams, indent=4))
+  
+  if log: 
+    _add_log(filename, "-------------------------------")
+    _add_log(filename, json.dumps(hyperparams, indent=4))
+    _add_log(filename, "-------------------------------")
+    _add_log(filename, f"Model has {num_params:,} parameters.")
+    _add_log(filename, "-------------------------------")
+
+  print(f"Model has {num_params:,} parameters.")   
 
   optimizer = optimizer(model.parameters(), lr=learning_rate)
   criterion = nn.CrossEntropyLoss(reduction='sum')   # so that batch loss is the sum of all losses of the batch
 
   start_time = time.time()
   losses_by_epoch = []
-  for epoch in range(n_epochs):
+  for epoch in range(1, n_epochs+1):
     epoch_loss = train(model, 
                       dataloader, 
                       optimizer, 
@@ -110,26 +133,29 @@ def tuner(dataset,
                       )
 
     losses_by_epoch.append(epoch_loss)
-    print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+
+    if log: 
+      _add_log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+      # if epoch % 10 == 0:
+      #   _add_log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
 
   end_time = time.time()
   elapsed_time = end_time - start_time
 
+  if log: 
+    _add_log(filename, "-------------------------------")
+    _add_log(filename, f"Training took {elapsed_time} seconds.")
+    _add_log(filename, "-------------------------------")
+
   return model, losses_by_epoch, elapsed_time
 
 
-# def custom_train(dataset, model_class):
-#   hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
-
-
-#   for hype in hyperparam_sets: 
-#     model, losses_by_epoch, elapsed_time = tuner(dataset, model_class, **hype)
-
-#   print(f"you have successfully reach here!!")
-
-
 def generate_hyperparam_set(): 
-  batch_size = _generate_random_int(64, 512, 64)
+  """
+  Generate a random hyperparameter set for hyperparameter tuning.
+  These are the tune-able hyperparameters that we cherry pick from all possible ones.
+  """
+  batch_size = _generate_random_int(200, 500, 100)
   learning_rate = _generate_random_learning_rate()
 
   embedding_dim = _generate_random_int(64, 256, 64)
@@ -160,7 +186,6 @@ def _generate_random_learning_rate(lower_bound=0.0001, upper_bound=0.1):
   return 10 ** r
 
 
-
 def _generate_random_int(min_val, max_val, step):
   """
   Return a random integer in range [min_value, max_value], 
@@ -173,21 +198,15 @@ def _generate_random_int(min_val, max_val, step):
       raise ValueError("step must be a positive integer")
 
   num_values = (max_val - min_val) // step + 1
-
   random_index = random.randint(0, num_values - 1)
-
   random_value = min_val + random_index * step
 
   return random_value
 
 
+def _add_log(filename, message):
 
+  os.makedirs(os.path.dirname(filename), exist_ok=True)
 
-# max_length = 15
-# print(f"{'Took'.ljust(max_length)}: {elapsed_time} seconds;")
-# print(f"{'Device'.ljust(max_length)}: {DEVICE};")
-# print(f"{'Epoch'.ljust(max_length)}: {epoch};")
-# print(f"{'Learning rate'.ljust(max_length)}: {learning_rate};")
-# print(f"{'Batch size'.ljust(max_length)}: {batch_size};")
-# print(f"{'Embedding dim'.ljust(max_length)}: {embedding_dim};")
-# print(f"{'Hidden size'.ljust(max_length)}: {hidden_size};")
+  with open(filename, "a") as f:
+    f.write(message + "\n")

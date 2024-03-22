@@ -10,6 +10,10 @@ from statics import SEED
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
+
+# TODO: make use of dropout and num_layers
+
+
 class FeedForwardNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_size, output_size,
             dropout=0.0, num_layers=1  # ignoring them for now
