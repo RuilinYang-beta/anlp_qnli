@@ -115,3 +115,7 @@ class SimpleRNN(nn.Module):
       # --------------------------------------------------------------------------------
     else: 
       raise ValueError("emb should be 2D or 3D tensor")
+
+  @staticmethod
+  def get_type(): 
+    return "RNN"

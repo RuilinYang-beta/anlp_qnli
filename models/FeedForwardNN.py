@@ -2,8 +2,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import sys
+sys.path.append('..')  # Add the parent directory to the sys.path
+
+from statics import SEED
+
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+
 class FeedForwardNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_size, output_size):
+    def __init__(self, vocab_size, embedding_dim, hidden_size, output_size,
+            dropout=0.0, num_layers=1  # ignoring them for now
+    ):
         super(FeedForwardNN, self).__init__()
         #Embedding layer
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
@@ -30,3 +40,7 @@ class FeedForwardNN(nn.Module):
         out = self.relu(self.fc1(embedded_avg))
         out = self.fc2(out)
         return out
+    
+    @staticmethod
+    def get_type(): 
+        return "FFNN"

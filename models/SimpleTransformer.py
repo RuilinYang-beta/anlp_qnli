@@ -200,3 +200,7 @@ class SimpleTransformer(nn.Module):
       return final_out  
     else: 
       assert False, "input should be either 2D or 3D tensor."
+
+  @staticmethod
+  def get_type(): 
+    return "TRANSFORMER"

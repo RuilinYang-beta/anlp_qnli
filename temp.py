@@ -14,8 +14,11 @@ from data_loading.utils import pad_x_tensors
 from evaluation import evaluate_model
 from statics import DEVICE, SEED, Notation
 
+from models.ModelFactory import ModelFactory
+
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
+
 
 
 # ================== Dataset ==================
@@ -34,10 +37,7 @@ train_set = StressDataset('data/train.json', Notation.ORIGINAL_CHAR, forEval=Fal
 # --- flags ---
 # change the models and flags there, the flags is also shared to evaluation function
 # later on we can get these flags from terminal arguments
-model = FeedForwardNN
-isRNN = False
-isFFNN = True
-isTransformer = False
+model = SimpleRNN
 
 # --- model name for saving it ---
 save_model = False
@@ -53,21 +53,20 @@ embedding_dim=128
 output_size=3
 # --- model specific, please comment and uncomment to get the things you need ---
 # => for RNN:
-# hidden_size=128
-# num_layers=1
-# bidirectional=True
-# dropout =0.2
-# => for FFNN:
 hidden_size=128
 num_layers=1
+bidirectional=True
+dropout =0.2
+# => for FFNN:
+# hidden_size=128
+# num_layers=1
 # => for Transformer:
 # num_blocks=4
 # num_heads=4
 # dropout =0.2
 
 
-model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model=model, 
-                                isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
+model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model_class=model, 
                                 n_epochs=n_epochs, batch_size=batch_size, learning_rate=learning_rate, optimizer=optimizer, 
                                 embedding_dim=embedding_dim, output_size=output_size, 
                                 # for RNN
@@ -80,40 +79,35 @@ model, losses_by_epoch, elapsed_time = tuner(dataset=train_set, model=model,
 
 print(f"{'Took'.ljust(15)}: {elapsed_time} seconds;")
 
-# ================== save model ==================
-# Specify the file path where you want to save the model
-model_path = f'trained_models/{model_name}.pth'
+# # ================== save model ==================
+# # Specify the file path where you want to save the model
+# model_path = f'trained_models/{model_name}.pth'
 
-# Save both model architecture and parameters
-if save_model: 
-  torch.save(model, model_path)
+# # Save both model architecture and parameters
+# if save_model: 
+#   torch.save(model, model_path)
 
-# To load the model back later, you can use:
-# model = torch.load(model_path)
+# # To load the model back later, you can use:
+# # model = torch.load(model_path)
 
-# playsound('temp_sound/mammal.mp3')  # play sound to notify the end of training
+# # playsound('temp_sound/mammal.mp3')  # play sound to notify the end of training
 
 
-# ================== dummy eval ==================
+# # ================== dummy eval ==================
 
-# TODO: [Ellie] consider encapsulate these two functions into a bigger eval function 
-#       and put it inside your hyperparam tuning function,
-#       because it has so many common hyperparams with `tuner` function
+# # TODO: [Ellie] consider encapsulate these two functions into a bigger eval function 
+# #       and put it inside your hyperparam tuning function,
+# #       because it has so many common hyperparams with `tuner` function
 
 
 criterion = nn.CrossEntropyLoss(reduction='sum')
 
-print("------------------ eval the freshly trained model ------------------")
+# print("------------------ eval the freshly trained model ------------------")
 
 # evaluate on training set -> supposedly performs better than on dev
 loss, accuracy, f1_macro = evaluate_model(model, 
                                           train_set,  
                                           criterion,
-                                          isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
-<<<<<<< HEAD
-=======
-                                          hidden_size=hidden_size
->>>>>>> main
                                           )
 print(f"[train] Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")
 
@@ -126,10 +120,5 @@ dev_set = StressDataset('data/dev.json', Notation.ORIGINAL_CHAR, forEval=True,
 loss, accuracy, f1_macro = evaluate_model(model, 
                                           dev_set, 
                                           criterion,
-                                          isFFNN=isFFNN, isRNN=isRNN, isTransformer=isTransformer,
-<<<<<<< HEAD
-=======
-                                          hidden_size=hidden_size
->>>>>>> main
                                           )
 print(f"[dev]   Loss: {loss}, Accuracy: {accuracy}, F1-macro: {f1_macro}")

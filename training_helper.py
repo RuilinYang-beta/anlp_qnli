@@ -7,6 +7,7 @@ from playsound import playsound
 from models.SimpleRNN import SimpleRNN
 from models.FeedForwardNN import FeedForwardNN
 from models.SimpleTransformer import SimpleTransformer
+from models.ModelFactory import ModelFactory
 from data_loading.StressDataset import StressDataset
 from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
@@ -18,15 +19,12 @@ torch.backends.cudnn.deterministic = True
 
 
 def train(model, train_dataloader, optimizer, criterion,
-          isRNN=False, isFFNN=False, isTransformer=False,
           **kwargs): 
   """
   Training loop of one epoch.
   Exclude hyperparams as many as possible (they go into `tuner` function).
   """
 
-  model_flag = sum([isRNN, isFFNN, isTransformer])
-  assert model_flag == 1, "Please specify one and only one model type."
 
   epoch_loss = 0
 
@@ -40,14 +38,11 @@ def train(model, train_dataloader, optimizer, criterion,
     seq_lengths = seq_lengths.to(DEVICE)
 
     # call model-specific forward method
-    if isRNN: 
+    if model.get_type() == "RNN": 
       out, _ = model(x, seq_lengths)
 
-    if isFFNN:
+    else: 
       out = model(x)
-
-    if isTransformer: 
-      out = model(x, seq_lengths)
 
     batch_loss = criterion(out, y)
     epoch_loss += batch_loss.item()
@@ -60,10 +55,7 @@ def train(model, train_dataloader, optimizer, criterion,
 
 
 def tuner(dataset, 
-          model=SimpleRNN, 
-          isRNN=False,  # RNN has diff init way and diff forward method, 
-          isFFNN=False,
-          isTransformer=False,
+          model_class=SimpleRNN, 
           # --- common hyperparams - for training loop ---
           n_epochs=1, batch_size=300, learning_rate=0.0001,  
           optimizer=torch.optim.SGD,
@@ -81,27 +73,22 @@ def tuner(dataset,
   """
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
-  model_flag = sum([isRNN, isFFNN, isTransformer])
-  assert model_flag == 1, "Please specify one and only one model type."
 
   vocab_size = dataset.get_vocab_size()
   dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=pad_x_tensors)
 
-  # initialize models in diff ways
-  if isRNN: 
-    model = model(vocab_size, embedding_dim, hidden_size, output_size, 
-                  dropout=dropout,
-                  num_layers=num_layers, bidirectional=bidirectional).to(DEVICE)
-
-  if isFFNN: 
-    model = model(vocab_size, embedding_dim, hidden_size, output_size, 
-            dropout=dropout, num_layers=num_layers).to(DEVICE)
-
-  if isTransformer: 
-    model = model(vocab_size, embedding_dim,
-                  num_blocks, num_heads,
-                  output_size, 
-                  dropout=dropout).to(DEVICE)
+  # encapsulate model creation logic in `ModelFactory`
+  model = ModelFactory.init_model(model_class, 
+                      vocab_size, 
+                      embedding_dim=embedding_dim,
+                      output_size=output_size,
+                      dropout=dropout,
+                      hidden_size=hidden_size,
+                      num_layers=num_layers,
+                      bidirectional=bidirectional,
+                      num_blocks=num_blocks,
+                      num_heads=num_heads
+                      )
 
   num_params = sum(p.numel() for p in model.parameters())
   print(f"Model has {num_params:,} parameters.")    # would this be sth interesting to log?
@@ -114,7 +101,6 @@ def tuner(dataset,
   for epoch in range(n_epochs):
     # pass all hyperparams that `train` possibly need 
     epoch_loss = train(model, dataloader, optimizer, criterion, 
-                      isRNN=isRNN, isFFNN=isFFNN, isTransformer=isTransformer,
                       hidden_size=hidden_size, 
                       num_blocks=num_blocks, num_heads=num_heads)
 
