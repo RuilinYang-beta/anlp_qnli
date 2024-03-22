@@ -39,8 +39,11 @@ def train(model, train_dataloader, optimizer, criterion,
     seq_lengths = seq_lengths.to(DEVICE)
 
     # call model-specific forward method
-    if model.get_type() == "RNN": 
+    if "RNN" in model.__class__.__name__: 
       out, _ = model(x, seq_lengths)
+
+    elif "Transformer" in model.__class__.__name__:
+      out = model(x, seq_lengths)
 
     else: 
       out = model(x)

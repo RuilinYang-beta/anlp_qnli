@@ -9,24 +9,24 @@ sys.path.append('..')  # Add the parent directory to the sys.path
 from statics import SEED
 
 """
-A wrapper of RNN layer in PyTorch, 
-with an embedding layer, and a linear layer that maps to the desired output size.
+Copy and pasted from SimpleRNN, with `bidirectioal=True`. 
+Purpose of this class is to make initializing and training more consistent.
 """
 
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 
-# TODO: make use of dropout
 
+class BiRNN(nn.Module):
 
-class SimpleRNN(nn.Module):
-
-  def __init__(self, vocab_size, embedding_dim, hidden_size, output_size, dropout=0.2,
-              num_layers=1, bidirectional=False):
-    super(SimpleRNN, self).__init__()
+  def __init__(self, vocab_size, embedding_dim, hidden_size, output_size, 
+              dropout=0.2,
+              num_layers=1
+              ):
+    super(BiRNN, self).__init__()
     
-    self.D = 2 if bidirectional else 1
+    self.D = 2 
 
     # ----- from indices of one-hot to embedding -----
     # the embeddings at index 0 is for padding token, we don't need to update it 
@@ -37,8 +37,8 @@ class SimpleRNN(nn.Module):
     # ----- RNN layer -----
     self.rnn = nn.RNN(embedding_dim, hidden_size, 
                       batch_first=True, 
-                      num_layers=num_layers, bidirectional=bidirectional, 
-                      dropout=dropout)
+                      num_layers=num_layers, bidirectional=True, 
+                      dropout=0.0 if num_layers == 1 else dropout)
 
     # ----- from output of RNN to the real output we want -----
     # need to add softmax layer? -> no, because CrossEntropyLoss does it for us

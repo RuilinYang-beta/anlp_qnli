@@ -25,18 +25,16 @@ class ModelFactory:
           num_heads=None,          # for Transformer
             ):
 
-    m = model_class.get_type()
-
-    if m == "RNN":
+    if model_class.__name__ == "SimpleRNN" or model_class.__name__ == "BiRNN":
       return model_class(vocab_size, embedding_dim, hidden_size, output_size, 
                     dropout=dropout,
                     num_layers=num_layers, bidirectional=bidirectional).to(DEVICE)
 
-    elif m == "FFNN": 
+    elif model_class.__name__ == "FeedForwardNN": 
       return model_class(vocab_size, embedding_dim, hidden_size, output_size, 
               dropout=dropout, num_layers=num_layers).to(DEVICE)
 
-    elif m == "TRANSFORMER": 
+    elif model_class.__name__ == "SimpleTransformer": 
       return model_class(vocab_size, embedding_dim,
                     num_blocks, num_heads,
                     output_size, 

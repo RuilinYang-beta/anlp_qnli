@@ -29,7 +29,7 @@ def evaluate_model(model, dataset, criterion,
 
         with torch.no_grad():
             # call the model-specific forward method
-            if model.get_type() == "RNN": 
+            if "RNN" in model.__class__.__name__: 
                 output, _ = model(x)
 
             else: 

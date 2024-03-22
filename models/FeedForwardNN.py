@@ -41,6 +41,3 @@ class FeedForwardNN(nn.Module):
         out = self.fc2(out)
         return out
     
-    @staticmethod
-    def get_type(): 
-        return "FFNN"
