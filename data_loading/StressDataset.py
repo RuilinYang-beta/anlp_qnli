@@ -7,11 +7,6 @@ sys.path.append('..')  # Add the parent directory to the sys.path
 from statics import Notation, notation2key, Token, labels
 
 
-"""
-Note: 
-before `utils.py` is completely deprecated, 
-keep `load_data` and `build_vocabulary` there in sync.
-"""
 class StressDataset(Dataset):
 
   def __init__(self, filepath, notation, forEval: bool,

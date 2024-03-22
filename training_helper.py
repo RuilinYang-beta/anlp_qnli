@@ -1,8 +1,5 @@
 import time
-import random
-import math
 import json
-import os
 
 import torch 
 import torch.nn as nn
@@ -18,6 +15,8 @@ from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
 from evaluation import evaluate_model
 from statics import DEVICE, SEED, Notation
+from utils import _log
+
 
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
@@ -112,11 +111,10 @@ def tuner(dataset,
   print(json.dumps(hyperparams, indent=4))
   
   if log: 
-    _add_log(filename, "-------------------------------")
-    _add_log(filename, json.dumps(hyperparams, indent=4))
-    _add_log(filename, "-------------------------------")
-    _add_log(filename, f"Model has {num_params:,} parameters.")
-    _add_log(filename, "-------------------------------")
+    _log(filename, json.dumps(hyperparams, indent=4))
+    _log(filename, "-------------------------------")
+    _log(filename, f"Model has {num_params:,} parameters.")
+    _log(filename, "-------------------------------")
 
   print(f"Model has {num_params:,} parameters.")   
 
@@ -135,17 +133,18 @@ def tuner(dataset,
     losses_by_epoch.append(epoch_loss)
 
     if log: 
-      _add_log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+      _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+      # you may want to switch to the below when training with big epoch, eg. 5000
       # if epoch % 10 == 0:
-      #   _add_log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+      #   _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
 
   end_time = time.time()
   elapsed_time = end_time - start_time
 
   if log: 
-    _add_log(filename, "-------------------------------")
-    _add_log(filename, f"Training took {elapsed_time} seconds.")
-    _add_log(filename, "-------------------------------")
+    _log(filename, "-------------------------------")
+    _log(filename, f"Training took {elapsed_time} seconds.")
+    _log(filename, "-------------------------------")
 
   return model, losses_by_epoch, elapsed_time
 
@@ -173,40 +172,3 @@ def generate_hyperparam_set():
     "num_blocks":       num_blocks, 
     "num_heads":        num_heads
     }
-
-
-def _generate_random_learning_rate(lower_bound=0.0001, upper_bound=0.1):
-  """
-  Return a random learning rate in range (0.0001, 0.1)
-  """
-  lower = math.log10(lower_bound)
-  upper = math.log10(upper_bound)
-
-  r = random.uniform(lower, upper)
-  return 10 ** r
-
-
-def _generate_random_int(min_val, max_val, step):
-  """
-  Return a random integer in range [min_value, max_value], 
-  incremented by step.
-  """
-  if min_val > max_val:
-      raise ValueError("min_value must be less than or equal to max_value")
-
-  if step <= 0:
-      raise ValueError("step must be a positive integer")
-
-  num_values = (max_val - min_val) // step + 1
-  random_index = random.randint(0, num_values - 1)
-  random_value = min_val + random_index * step
-
-  return random_value
-
-
-def _add_log(filename, message):
-
-  os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-  with open(filename, "a") as f:
-    f.write(message + "\n")

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from data_loading.StressDataset import StressDataset
 from data_loading.transforms import transform1, target_transform
 
-from training_helper import tuner, generate_hyperparam_set, _add_log
+from training_helper import tuner, generate_hyperparam_set, _log
 from models.ModelFactory import ModelFactory
 from models.FeedForwardNN import FeedForwardNN
 from models.SimpleRNN import SimpleRNN
@@ -67,16 +67,21 @@ hyperparam_sets = [ {
         'embedding_dim': 64, 
         'hidden_size': 64, 
         'num_layers': 1, 
-        'num_blocks': 2, 
-        'num_heads': 2 }
+        'num_blocks': 1, 
+        'num_heads': 1 }
 ]
+
 # hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
 # ============================================
 
 for idx, hype in enumerate(hyperparam_sets): 
+
+  filename = f"{t}-{n}-{m}/model-{idx}.log"
+  _log(filename, "-------------------------------", mode="w")  # this will clean existing content, if any
+
   model, losses_by_epoch, elapsed_time = tuner(train_set, model_class, 
                                                 **hype, 
-                                                log=log, filename=f"{t}-{n}-{m}/set-{idx}.log")
+                                                log=log, filename=filename)
 
   if save_model: 
     model_path = f"{t}-{n}-{m}/model-{idx}.pth"
@@ -92,5 +97,5 @@ for idx, hype in enumerate(hyperparam_sets):
   print(eval_d)
 
   if log: 
-    _add_log(f"{t}-{n}-{m}/set-{idx}.log", eval_t)
-    _add_log(f"{t}-{n}-{m}/set-{idx}.log", eval_d)
+    _log(filename, eval_t)
+    _log(filename, eval_d)
