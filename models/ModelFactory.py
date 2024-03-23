@@ -8,23 +8,30 @@ sys.path.append('..')  # Add the parent directory to the sys.path
 
 from statics import DEVICE
 
+"""
+Centralize model initialization here.
+Args: 
+- All possible hyperparams for all models.
+Return:
+- The model and the hyperparams that are specific to the model.
+"""
 
 class ModelFactory:
 
   @staticmethod
   def init_model(model_class, 
             vocab_size=None, 
-          # --- common hyperparams - for model shape ---
-          embedding_dim=None,
-          # --- [model specific hyperparams] ---
-          hidden_size=None,      # for RNN and FFNN
-          num_layers=None,         # for RNN and FFNN  (TODO: enable FFNN to have stacked layers)
-          num_blocks=None,         # for Transformer
-          num_heads=None,          # for Transformer
-          # -------------------------------------
-          output_size=3,
-          dropout=0.2
-          ):
+            # --- common hyperparams - for model shape ---
+            embedding_dim=None,
+            # --- [model specific hyperparams] ---
+            hidden_size=None,      # for RNN and FFNN
+            num_layers=None,         # for RNN and FFNN  
+            num_blocks=None,         # for Transformer
+            num_heads=None,          # for Transformer
+            # -------------------------------------
+            output_size=3,
+            dropout=0.2
+            ):
 
     if model_class.__name__ == "SimpleRNN" or model_class.__name__ == "BiRNN":
       return (model_class(vocab_size, embedding_dim, hidden_size, output_size, 

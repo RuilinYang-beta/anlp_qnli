@@ -25,7 +25,7 @@ torch.backends.cudnn.deterministic = True
 TRAIN_PATH = 'data/train.json'
 NOTATION = Notation.ORIGINAL_CHAR
 # --- for model ---
-model_class = SimpleTransformer
+model_class = FeedForwardNN
 # --- for log / save model ---
 save_model = True
 log = True
@@ -36,7 +36,7 @@ train_set = StressDataset(TRAIN_PATH, NOTATION, forEval=False,
                         transform=transform1, 
                         target_transform=target_transform)
 
-dev_set = StressDataset('data/dev.json', Notation.ORIGINAL_CHAR, forEval=True,
+dev_set = StressDataset('data/dev.json', NOTATION, forEval=True,
                         transform=transform1, 
                         target_transform=target_transform, 
                         vocab=train_set.get_vocab())
