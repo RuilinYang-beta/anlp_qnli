@@ -1,5 +1,44 @@
 # What's new
 
+## hyperparams
+
+- generate random hyperparam ready
+- log training record ready
+
+## state of hyperparam-like things
+
+In the following 3 category, external things are used to write directory name (more see `temp.py`), tune-able things will be logged in file (see `tuner`), fixed things are fixed inside `tuner`
+
+---
+
+## --------------- external things --------------
+
+- normal training set / augmented training set
+- notation
+- normal embedding for numbers / NEKG embeddings
+- which model
+
+---
+
+## -------------- tune-able things --------------
+
+- batch_size
+- learning_rate
+- embedding_dim
+- hidden_size only FFNN / RNN
+- num_layers only FFNN / RNN
+- num_blocks only Transformer
+- num_heads only Transformer
+
+---
+
+## ---------------- fixed things ----------------
+
+- n_epochs=5000
+- dropout=0.2
+- output_size=3
+- optimizer=torch.optim.SGD [Ellie can add Adam if want]
+
 ## the omnipotent `temp.py`
 
 - `python temp.py`
@@ -9,7 +48,7 @@ All supported hyperparams are listed in the comments of this file.
 
 ## RNN family
 
-- We can have BiRNN and StackedRNN by passing flags to `SimpleRNN` class, see `temp.py` and `models/SimpleRNN.py`.
+- ~~We can have BiRNN and StackedRNN by passing flags to `SimpleRNN` class, see `temp.py` and `models/SimpleRNN.py`.~~ `BiRNN` class is back to keep consistency in initializing models
 - RNN don't need h_0 to call `forward` now, this leads to less cluttered code -> PyTorch will handle it
 
 ## `training_helper.py` for training and hyperparam tuning
@@ -19,8 +58,6 @@ In this file,
 - `train` is the training process for an epoch,
 - `tuner` is a bunch of hyperparams, epoch loops, inside the epoch loop it calls `train`
   The purpose of `tuner` is to encapsulate the hyperparams, and decouple `train` from hyperparams as much as possible.
-
-There is detailed TODOs in the comments of this file, they are assigned to either Ellie or Ruilin.
 
 # what we have now
 

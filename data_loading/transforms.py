@@ -30,17 +30,11 @@ Returns:
   - for `target_transform`: y_tensor
 """
 
-
-"""
-Note: 
-before `utils.py` is completely deprecated, 
-keep `xy_pair_generator` there in sync with `transform1`.
-"""
-
 import torch 
 
 import sys
 sys.path.append('..')  # Add the parent directory to the sys.path
+
 from statics import Notation, notation2key, Token, labels
 
 # ==================== for transform ====================
