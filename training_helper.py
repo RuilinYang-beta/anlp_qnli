@@ -15,7 +15,7 @@ from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
 from evaluation import evaluate_model
 from statics import DEVICE, SEED, Notation
-from utils import _log
+from utils import _log, _generate_random_int, _generate_random_learning_rate
 
 
 torch.manual_seed(SEED)
@@ -76,7 +76,7 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 100   
+  n_epochs = 1   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2

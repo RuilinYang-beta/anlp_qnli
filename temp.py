@@ -71,7 +71,7 @@ m = model_class.__name__
 #         'num_heads': 1 }
 # ]
 
-hyperparam_sets = [generate_hyperparam_set() for i in range(10)]
+hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
 # ============================================
 
 for idx, hype in enumerate(hyperparam_sets): 
