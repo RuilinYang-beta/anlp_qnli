@@ -1,0 +1,19 @@
+-------------------------------
+{
+    "model_class": "SimpleTransformer",
+    "n_epochs": 1,
+    "batch_size": 300,
+    "learning_rate": 0.0001,
+    "embedding_dim": 64,
+    "num_blocks": 1,
+    "num_heads": 1
+}
+-------------------------------
+Model has 598,851 parameters.
+-------------------------------
+Epoch-1, avg loss per example in epoch 1.092417751002956
+-------------------------------
+Training took 19.7721209526062 seconds.
+-------------------------------
+[train] Loss: 1.090996089681235, Accuracy: 0.38054054054054054, F1-macro: 0.28155366576588264
+[dev]   Loss: 1.103935523131459, Accuracy: 0.3402061855670103, F1-macro: 0.2708006549133746

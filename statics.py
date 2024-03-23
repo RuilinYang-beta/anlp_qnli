@@ -9,10 +9,10 @@ SEED = 42
 
 # notation of numbers, as constant 
 class Notation(Enum):
-    ORIGINAL = auto()
-    SCIENTIFIC = auto()
-    ORIGINAL_CHAR = auto()
-    SCIENTIFIC_CHAR = auto()
+    ORIGINAL = "ori"
+    SCIENTIFIC = "sci"
+    ORIGINAL_CHAR = "ori_char"
+    SCIENTIFIC_CHAR = "sch_char"
 
 
 class Token(Enum):

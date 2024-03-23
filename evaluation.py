@@ -3,19 +3,14 @@ from sklearn.metrics import accuracy_score, f1_score
 from statics import DEVICE  
 
 def evaluate_model(model, dataset, criterion, 
-                    isRNN=False, isFFNN=False, isTransformer=False, 
                     **kwargs  # model-specific hyperparams for forward method
                     ):
     """
     Args:
         model: model to evaluate
-        h_0: initial hidden state
         dataset: an instance of `Dataset` class
         criterion: loss function    
     """
-
-    model_flag = sum([isRNN, isFFNN, isTransformer])
-    assert model_flag == 1, "Please specify one and only one model type."
 
     model.eval()
     total_loss = 0
@@ -34,15 +29,12 @@ def evaluate_model(model, dataset, criterion,
 
         with torch.no_grad():
             # call the model-specific forward method
-            if isRNN: 
+            if "RNN" in model.__class__.__name__: 
                 output, _ = model(x)
 
-            if isFFNN:
+            else: 
                 output = model(x)
 
-            if isTransformer:
-                output = model(x)
-                
             loss = criterion(output, y)
             total_loss += loss.item()
             predicted = torch.argmax(output, dim=0)
