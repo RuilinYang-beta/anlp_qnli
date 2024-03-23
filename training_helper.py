@@ -76,7 +76,7 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 10   
+  n_epochs = 100   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
@@ -140,6 +140,7 @@ def tuner(dataset,
 
   end_time = time.time()
   elapsed_time = end_time - start_time
+  print(f"Training took {elapsed_time} seconds.")
 
   if log: 
     _log(filename, "-------------------------------")

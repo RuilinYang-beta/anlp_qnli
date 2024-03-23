@@ -61,17 +61,17 @@ m = model_class.__name__
 # === optionally you can change these here ===
 # but eventually we let generate_hyperparam_set to handle it
 # I only keep it here because my computer can't handle too complex model
-hyperparam_sets = [ { 
-        'batch_size': 300, 
-        'learning_rate': 0.0001, 
-        'embedding_dim': 64, 
-        'hidden_size': 64, 
-        'num_layers': 1, 
-        'num_blocks': 1, 
-        'num_heads': 1 }
-]
+# hyperparam_sets = [ { 
+#         'batch_size': 300, 
+#         'learning_rate': 0.0001, 
+#         'embedding_dim': 64, 
+#         'hidden_size': 64, 
+#         'num_layers': 1, 
+#         'num_blocks': 1, 
+#         'num_heads': 1 }
+# ]
 
-# hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
+hyperparam_sets = [generate_hyperparam_set() for i in range(10)]
 # ============================================
 
 for idx, hype in enumerate(hyperparam_sets): 
