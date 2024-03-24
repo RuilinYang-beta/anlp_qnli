@@ -29,6 +29,16 @@ def prepare_parser():
                       help="choose model to train"
                       )
 
+  parser.add_argument("-e", "--epochs", 
+                      type=int, default=2000,
+                      help="number of epochs to train"
+                      )
+
+  parser.add_argument("-n", "--num_sets", 
+                      type=int, default=20,
+                      help="number of hyperparameter sets to generate"
+                      )
+
   parser.add_argument("-s", "--save", 
                       action="store_true", 
                       help="save the trained model"

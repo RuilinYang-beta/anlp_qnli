@@ -61,6 +61,8 @@ def train(model, train_dataloader, optimizer, criterion,
 
 def tuner(dataset, 
           model_class=SimpleRNN, 
+          # --- get from commandline arg ---
+          n_epochs=None,
           # --- common hyperparams ---
           batch_size=300, learning_rate=0.0001,  
           embedding_dim=128,
@@ -76,8 +78,6 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  # n_epochs = 2000   
-  n_epochs = 100   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
@@ -123,7 +123,7 @@ def tuner(dataset,
 
   start_time = time.time()
   losses_by_epoch = []
-
+  
   for epoch in range(1, n_epochs+1):
     epoch_loss = train(model, 
                       dataloader, 
