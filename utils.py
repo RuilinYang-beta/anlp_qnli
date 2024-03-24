@@ -1,14 +1,44 @@
 """
 Utility functions to : 
+- prepare parser for command line arguments
+- generate random number for hyperparameter sets
+- write/add log to file
 - load data from file
-- build vocabulary based on dataset and notation
-- yield a pair of (input, label) for each record in the dataset to feed to model
 """
 
+import argparse
 import json 
 import random
 import math
 import os
+
+def prepare_parser():
+  parser = argparse.ArgumentParser()
+  parser.add_argument("training",
+                      choices=['normal', 'augmented'],
+                      help="choose training set"
+                      )  
+
+  parser.add_argument("notation",
+                      choices=['original', 'character'],
+                      help="choose notation of number"
+                      )
+
+  parser.add_argument("model", 
+                      choices=["FFNN", "RNN", "BiRNN", "Transformer"],
+                      help="choose model to train"
+                      )
+
+  parser.add_argument("-s", "--save", 
+                      action="store_true", 
+                      help="save the trained model"
+                      )
+
+  parser.add_argument("-l", "--log", 
+                      action="store_true", 
+                      help="log various details of training process and model"
+                      )
+  return parser
 
 def _generate_random_learning_rate(lower_bound=0.0001, upper_bound=0.1):
   """

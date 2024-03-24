@@ -1,5 +1,13 @@
 # What's new
 
+## command line arguments
+
+Now `python qnli.py` requires commandline arguments, run `python qnli.py -h` for help message.  
+There are 3 positional arguments and 2 optional arguments:  
+`python qnli.py {normal, augmented} {original, character} {FFNN, RNN, BiRNN, Transformer} [-s] [-l]`  
+Things in {} you need to choose one, thing in [] is optional.  
+The meaning of each argument see `qnli.py`/`utils.py`, or run `python qnli.py -h`.
+
 ## hyperparams
 
 - generate random hyperparam ready

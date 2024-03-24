@@ -76,7 +76,7 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 1   
+  n_epochs = 2000   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
@@ -100,7 +100,6 @@ def tuner(dataset,
   num_params = sum(p.numel() for p in model.parameters())
 
   hyperparams = {
-                  "model_class": model_class.__name__,
                   "n_epochs": n_epochs,
                   "batch_size": batch_size, 
                   "learning_rate": learning_rate,
@@ -108,15 +107,15 @@ def tuner(dataset,
                   **chosen_hyperparams,
                 }
 
-  print(json.dumps(hyperparams, indent=4))
   
   if log: 
     _log(filename, json.dumps(hyperparams, indent=4))
-    _log(filename, "-------------------------------")
     _log(filename, f"Model has {num_params:,} parameters.")
     _log(filename, "-------------------------------")
 
+  print(json.dumps(hyperparams, indent=4))
   print(f"Model has {num_params:,} parameters.")   
+  print("-------------------------------")
 
   optimizer = optimizer(model.parameters(), lr=learning_rate)
   criterion = nn.CrossEntropyLoss(reduction='sum')   # so that batch loss is the sum of all losses of the batch
@@ -134,18 +133,17 @@ def tuner(dataset,
 
     if log: 
       _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
-      # you may want to switch to the below when training with big epoch, eg. 5000
-      # if epoch % 10 == 0:
-      #   _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
 
   end_time = time.time()
   elapsed_time = end_time - start_time
-  print(f"Training took {elapsed_time} seconds.")
 
   if log: 
     _log(filename, "-------------------------------")
     _log(filename, f"Training took {elapsed_time} seconds.")
     _log(filename, "-------------------------------")
+
+  print(f"Training took {elapsed_time} seconds.")
+  print("-------------------------------")
 
   return model, losses_by_epoch, elapsed_time
 

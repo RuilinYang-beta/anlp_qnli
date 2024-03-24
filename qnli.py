@@ -1,114 +1,115 @@
-import argparse
-import torch
-import torch.nn as nn
-import unidecode
-import string
 import time
+import json 
+import torch 
+import torch.nn as nn
+from torch.utils.data import DataLoader
 
-from utils import char_tensor, random_training_set, time_since, CHUNK_LEN
-from language_model import plot_loss, diff_temp, custom_train, train, generate
-from model.model import LSTM
+from data_loading.StressDataset import StressDataset
+from data_loading.transforms import transform1, target_transform
 
+from training_helper import tuner, generate_hyperparam_set
+from utils import prepare_parser, _log
+from models.ModelFactory import ModelFactory
+from models.FeedForwardNN import FeedForwardNN
+from models.SimpleRNN import SimpleRNN
+from models.BiRNN import BiRNN
+from models.SimpleTransformer import SimpleTransformer
 
-def main():
-    parser = argparse.ArgumentParser(
-        description='Stress Test'
-    )
+from evaluation import evaluate_model
+from statics import DEVICE, SEED, Notation
 
-    parser.add_argument(
-        '--rnn', dest='rnn',
-        help='Train a simple RNN model',
-        action='store_true'
-    )
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
 
-    parser.add_argument(
-        '--rnn_bi', dest='rnn_bi',
-        help='Train a BiRNN model',
-        action='store_true'
-    )
+# === get choice of training_set, notation, model, save, log from command line ===
+parser = prepare_parser()
+args = parser.parse_args()
 
-    parser.add_argument(
-        '--rnn_stacked', dest='rnn_stacked',
-        help='Train a stacked RNN model',
-        action='store_true'
-    )
+# === init configs ===
+model_map = {"FFNN": FeedForwardNN, "RNN": SimpleRNN, "BiRNN": BiRNN, "Transformer": SimpleTransformer}
+# --- for data --- 
+TRAIN_PATH = 'data/train.json' if args.training == 'normal' else 'data/train_aug.json'
+NOTATION = Notation.ORIGINAL if args.notation == 'original' else Notation.ORIGINAL_CHAR
+# --- for model ---
+model_class = model_map[args.model]
+# --- for log / save model ---
+save_model = True if args.save else False
+log = True if args.log else False
 
-    args = parser.parse_args()
+# === prepare for training ===
+train_set = StressDataset(TRAIN_PATH, NOTATION, forEval=False,
+                        transform=transform1, 
+                        target_transform=target_transform)
 
+dev_set = StressDataset('data/dev.json', NOTATION, forEval=True,
+                        transform=transform1, 
+                        target_transform=target_transform, 
+                        vocab=train_set.get_vocab())
 
+criterion = nn.CrossEntropyLoss(reduction='sum')
 
-    """
-    TODO: We still need: 
-    -> a function to load the train/dev/test data, and if necessary, preprocessing 
-    """
+# === prepare for log/save model  ===
+t = "train" if TRAIN_PATH == 'data/train.json' else "train_aug"
+n = NOTATION.value
+m = model_class.__name__
 
-    if args.rnn:
-        # -> some hyperparams 
-        # -> init model and optimizer 
-        # -> train model
+# === set hyperparams ===
+# --- supported hyperparams ---
+# * batch_size
+# * learning_rate
+# * embedding_dim
+# * hidden_size       only FFNN / RNN
+# * num_layers        only FFNN / RNN
+# * num_blocks        only Transformer 
+# * num_heads         only Transformer
 
-        """
-        A epoch is a full pass over the entire training set.
-        A batch is a subset of the training set that is used to estimate the error of the model.
-        """
-        
-        """
-        TODO: We still need: 
-        -> a function to segment the training set into batches
-        -> a function to nudge the params per batch -> could be adapted from `train` function
-        -> a function to evaluate the trained model against dev/test data
-        
-        We optionally need: 
-        -> some plotting function to plot the loss
-        -> some timing function 
-        """         
-        # for each epoch 
-            # for each batch 
-                # do forward thing
-                # get loss 
-                # do backward thing to nudge params 
+# --- option1: hand-picked hyperparams, use it for test/zoom-in ---
+# hyperparam_sets = [ { 
+#         'batch_size': 300, 
+#         'learning_rate': 0.0001, 
+#         'embedding_dim': 64, 
+#         'hidden_size': 64, 
+#         'num_layers': 1, 
+#         'num_blocks': 1, 
+#         'num_heads': 1 }
+# ]
 
-        # evaluate the trained model against dev/test data
+# --- option2: generate random hyperparams ---
+hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
 
-        # TODO: below won't work, just for reference  
-        # for epoch in range(1, n_epochs+1):
-        #     # this function nudges params per batch size 
-        #     loss = train(decoder, decoder_optimizer, *random_training_set())    
-        #     # accumulate loss per `plot_every` param updates
-        #     loss_total += loss    # -> for plotting/seeing the loss is actually decreasing
-        pass
+# === train models with diff hyperparam sets ===
+for idx, hype in enumerate(hyperparam_sets): 
 
-    if args.rnn_bi:
-        # more or less the same as above 
-        pass
+  filename = f"{t}-{n}-{m}/model-{idx}.log"
 
-    if args.rnn_stacked:
-        # more or less the same as above 
-        pass
+  if log: 
+    _log(filename, "===============================", mode="w")  # this will clean existing content, if any
+    _log(filename, "Training with the following config: ")
+    _log(filename, json.dumps(dict(vars(args)), indent=4))
+    _log(filename, "-------------------------------")  # this will clean existing content, if any
 
-    """
-    We perhaps also need this flag for trying hyper params. 
-    Can we make educated guess which combinations of params to try? How? 
-    """
-    # if args.custom_train:
-    #     # YOUR CODE HERE
-    #     #     TODO:
-    #     #         1) Fill in `hyperparam_list` with dictionary of hyperparameters
-    #     #         that you want to try.
-    #     ####################### STUDENT SOLUTION ###############################
-    #     hyperparam_list = [{"n_epochs":100, 
-    #                         "print_every":10, 
-    #                         "hidden_size": 10}, 
-    #                        {"n_epochs":100, 
-    #                         "print_every":10, 
-    #                         "hidden_size": 20}]
-    #     ########################################################################
-    #     bpc = custom_train(hyperparam_list)
+  print("-------------------------------")
+  print("Training with the following config: ")
+  print(json.dumps(dict(vars(args)), indent=4))
+  print("-------------------------------")
 
-    #     for keys, values in bpc.items():
-    #         print("BPC {}: {}".format(keys, values))
+  model, losses_by_epoch, elapsed_time = tuner(train_set, model_class, 
+                                                **hype, 
+                                                log=log, filename=filename)
 
+  if save_model: 
+    model_path = f"{t}-{n}-{m}/model-{idx}.pth"
+    torch.save(model, model_path)                                                
 
+  loss_t, acc_t, f1_macro_t = evaluate_model(model, train_set, criterion)
+  loss_d, accuracy_d, f1_macro_d = evaluate_model(model, dev_set, criterion)
 
-if __name__ == "__main__":
-    main()
+  eval_t = f"[train] Loss: {loss_t}, Accuracy: {acc_t}, F1-macro: {f1_macro_t}"
+  eval_d = f"[dev]   Loss: {loss_d}, Accuracy: {accuracy_d}, F1-macro: {f1_macro_d}"
+
+  print(eval_t)
+  print(eval_d)
+
+  if log: 
+    _log(filename, eval_t)
+    _log(filename, eval_d)
