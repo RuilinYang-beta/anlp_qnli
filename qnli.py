@@ -64,29 +64,29 @@ m = model_class.__name__
 # * num_heads         only Transformer
 
 # --- option1: hand-picked hyperparams, use it for test/zoom-in ---
-hyperparam_sets = [ 
-  # { 
-  # 'batch_size': 300, 
-  # 'learning_rate': 0.0001, 
-  # 'embedding_dim': 64, 
-  # 'hidden_size': 64, 
-  # 'num_layers': 1, 
-  # 'num_blocks': 1, 
-  # 'num_heads': 1 
-  # }, 
-  { 
-  'batch_size': 500, 
-  'learning_rate': 0.01726287996407694, 
-  'embedding_dim': 128, 
-  'hidden_size': 192, 
-  'num_layers': 3, 
-  'num_blocks': 1, 
-  'num_heads': 1 
-  } 
-]
+# hyperparam_sets = [ 
+#   # { 
+#   # 'batch_size': 300, 
+#   # 'learning_rate': 0.0001, 
+#   # 'embedding_dim': 64, 
+#   # 'hidden_size': 64, 
+#   # 'num_layers': 1, 
+#   # 'num_blocks': 1, 
+#   # 'num_heads': 1 
+#   # }, 
+#   # { 
+#   # 'batch_size': 500, 
+#   # 'learning_rate': 0.01726287996407694, 
+#   # 'embedding_dim': 128, 
+#   # 'hidden_size': 192, 
+#   # 'num_layers': 3, 
+#   # 'num_blocks': 1, 
+#   # 'num_heads': 1 
+#   # } 
+# ]
 
 # --- option2: generate random hyperparams ---
-# hyperparam_sets = [generate_hyperparam_set() for i in range(args.num_sets)]
+hyperparam_sets = [generate_hyperparam_set() for i in range(args.num_sets)]
 
 # === train models with diff hyperparam sets ===
 for idx, hype in enumerate(hyperparam_sets): 
@@ -97,8 +97,8 @@ for idx, hype in enumerate(hyperparam_sets):
     _log(filename, "===============================", mode="w")  # this will clean existing content, if any
     _log(filename, "Training with the following config: ")
     _log(filename, json.dumps(dict(vars(args)), indent=4))
-    _log(filename, "-------------------------------")  # this will clean existing content, if any
-
+    _log(filename, "-------------------------------")  
+  
   print("===============================")
   print("Training with the following config: ")
   print(json.dumps(dict(vars(args)), indent=4))
