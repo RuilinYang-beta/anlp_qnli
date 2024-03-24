@@ -52,9 +52,11 @@ def train(model, train_dataloader, optimizer, criterion,
     batch_loss = criterion(out, y)
     epoch_loss += batch_loss.item()
 
-    batch_loss.backward()
-    optimizer.step()
     optimizer.zero_grad()
+    batch_loss.backward()
+    # gradient clipping - I don't fully understand yet
+    nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    optimizer.step()
 
   return epoch_loss
 
