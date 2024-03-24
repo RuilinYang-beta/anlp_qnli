@@ -76,7 +76,7 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 2000   
+  n_epochs = 1   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
