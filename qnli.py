@@ -75,7 +75,7 @@ m = model_class.__name__
 # ]
 
 # --- option2: generate random hyperparams ---
-hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
+hyperparam_sets = [generate_hyperparam_set() for i in range(20)]
 
 # === train models with diff hyperparam sets ===
 for idx, hype in enumerate(hyperparam_sets): 

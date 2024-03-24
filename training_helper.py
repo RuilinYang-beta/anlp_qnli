@@ -76,7 +76,8 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 2000   
+  # n_epochs = 2000   
+  n_epochs = 100   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
@@ -122,6 +123,7 @@ def tuner(dataset,
 
   start_time = time.time()
   losses_by_epoch = []
+
   for epoch in range(1, n_epochs+1):
     epoch_loss = train(model, 
                       dataloader, 
@@ -131,8 +133,10 @@ def tuner(dataset,
 
     losses_by_epoch.append(epoch_loss)
 
-    if log: 
-      _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+    if epoch % 10 == 0:
+      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+      if log:
+        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
 
   end_time = time.time()
   elapsed_time = end_time - start_time
