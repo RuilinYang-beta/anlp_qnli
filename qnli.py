@@ -36,7 +36,7 @@ model_class = model_map[args.model]
 save_model = True if args.save else False
 log = True if args.log else False
 
-# === prepare for training ===
+# === prepare for training and tuning ===
 train_set = StressDataset(TRAIN_PATH, NOTATION, forEval=False,
                         transform=transform1, 
                         target_transform=target_transform)
@@ -75,7 +75,7 @@ m = model_class.__name__
 # ]
 
 # --- option2: generate random hyperparams ---
-hyperparam_sets = [generate_hyperparam_set() for i in range(3)]
+hyperparam_sets = [generate_hyperparam_set() for i in range(args.num_sets)]
 
 # === train models with diff hyperparam sets ===
 for idx, hype in enumerate(hyperparam_sets): 
@@ -88,12 +88,13 @@ for idx, hype in enumerate(hyperparam_sets):
     _log(filename, json.dumps(dict(vars(args)), indent=4))
     _log(filename, "-------------------------------")  # this will clean existing content, if any
 
-  print("-------------------------------")
+  print("===============================")
   print("Training with the following config: ")
   print(json.dumps(dict(vars(args)), indent=4))
   print("-------------------------------")
 
   model, losses_by_epoch, elapsed_time = tuner(train_set, model_class, 
+                                                n_epochs=args.epochs,
                                                 **hype, 
                                                 log=log, filename=filename)
 
