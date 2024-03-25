@@ -28,7 +28,7 @@ args = parser.parse_args()
 # === init configs ===
 model_map = {"FFNN": FeedForwardNN, "RNN": SimpleRNN, "BiRNN": BiRNN, "Transformer": SimpleTransformer}
 # --- for data --- 
-TRAIN_PATH = 'data/train.json' if args.training == 'normal' else 'data/train_aug.json'
+TRAIN_PATH = 'data/train.json' if args.training == 'normal' else 'data/train_augmented.json'
 NOTATION = Notation.ORIGINAL if args.notation == 'original' else Notation.ORIGINAL_CHAR
 # --- for model ---
 model_class = model_map[args.model]
