@@ -15,7 +15,7 @@ from data_loading.transforms import transform1, target_transform
 from data_loading.utils import pad_x_tensors
 from evaluation import evaluate_model
 from statics import DEVICE, SEED, Notation
-from utils import _log
+from utils import _log, _generate_random_int, _generate_random_learning_rate
 
 
 torch.manual_seed(SEED)
@@ -52,15 +52,19 @@ def train(model, train_dataloader, optimizer, criterion,
     batch_loss = criterion(out, y)
     epoch_loss += batch_loss.item()
 
-    batch_loss.backward()
-    optimizer.step()
     optimizer.zero_grad()
+    batch_loss.backward()
+    # gradient clipping - I don't fully understand yet
+    nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+    optimizer.step()
 
   return epoch_loss
 
 
 def tuner(dataset, 
           model_class=SimpleRNN, 
+          # --- get from commandline arg ---
+          n_epochs=None,
           # --- common hyperparams ---
           batch_size=300, learning_rate=0.0001,  
           embedding_dim=128,
@@ -76,7 +80,6 @@ def tuner(dataset,
   A wrapper that wraps hyperparameters and pass them to training loop. 
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
-  n_epochs = 10   
   optimizer = torch.optim.SGD   
   output_size = 3
   dropout = 0.2
@@ -100,7 +103,6 @@ def tuner(dataset,
   num_params = sum(p.numel() for p in model.parameters())
 
   hyperparams = {
-                  "model_class": model_class.__name__,
                   "n_epochs": n_epochs,
                   "batch_size": batch_size, 
                   "learning_rate": learning_rate,
@@ -108,21 +110,22 @@ def tuner(dataset,
                   **chosen_hyperparams,
                 }
 
-  print(json.dumps(hyperparams, indent=4))
   
   if log: 
     _log(filename, json.dumps(hyperparams, indent=4))
-    _log(filename, "-------------------------------")
     _log(filename, f"Model has {num_params:,} parameters.")
     _log(filename, "-------------------------------")
 
+  print(json.dumps(hyperparams, indent=4))
   print(f"Model has {num_params:,} parameters.")   
+  print("-------------------------------")
 
   optimizer = optimizer(model.parameters(), lr=learning_rate)
   criterion = nn.CrossEntropyLoss(reduction='sum')   # so that batch loss is the sum of all losses of the batch
 
   start_time = time.time()
   losses_by_epoch = []
+  
   for epoch in range(1, n_epochs+1):
     epoch_loss = train(model, 
                       dataloader, 
@@ -132,11 +135,10 @@ def tuner(dataset,
 
     losses_by_epoch.append(epoch_loss)
 
-    if log: 
-      _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
-      # you may want to switch to the below when training with big epoch, eg. 5000
-      # if epoch % 10 == 0:
-      #   _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+    if epoch % 10 == 0:
+      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+      if log:
+        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
 
   end_time = time.time()
   elapsed_time = end_time - start_time
@@ -145,6 +147,9 @@ def tuner(dataset,
     _log(filename, "-------------------------------")
     _log(filename, f"Training took {elapsed_time} seconds.")
     _log(filename, "-------------------------------")
+
+  print(f"Training took {elapsed_time} seconds.")
+  print("-------------------------------")
 
   return model, losses_by_epoch, elapsed_time
 
