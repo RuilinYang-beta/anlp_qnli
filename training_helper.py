@@ -54,7 +54,7 @@ def train(model, train_dataloader, optimizer, criterion,
 
     optimizer.zero_grad()
     batch_loss.backward()
-    # gradient clipping - I don't fully understand yet
+    # gradient clipping - I don't fully understand yet, but it solves the NaN loss problem
     nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     optimizer.step()
 
@@ -139,6 +139,10 @@ def tuner(dataset,
       print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
       if log:
         _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+      
+      # temp: for google colab only, a ugly hatch to save model per 10 epoch
+      model_path = filename.replace(".log", ".pth")
+      torch.save(model, model_path)    
 
   end_time = time.time()
   elapsed_time = end_time - start_time
