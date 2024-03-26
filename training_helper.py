@@ -127,6 +127,7 @@ def tuner(dataset,
   losses_by_epoch = []
   
   for epoch in range(1, n_epochs+1):
+    epoch_start_time = time.time()
     epoch_loss = train(model, 
                       dataloader, 
                       optimizer, 
@@ -136,9 +137,12 @@ def tuner(dataset,
     losses_by_epoch.append(epoch_loss)
 
     if epoch % 10 == 0:
-      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+      epoch_elapsed_time = time.time() - epoch_start_time
+      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
+            f"elapsed time {epoch_elapsed_time}")
       if log:
-        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)},"
+                       f"elapsed time {epoch_elapsed_time}")
 
   end_time = time.time()
   elapsed_time = end_time - start_time
