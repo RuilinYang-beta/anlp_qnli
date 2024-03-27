@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 # from playsound import playsound
+from utils import EarlyStopping
 
 from models.SimpleRNN import SimpleRNN
 from models.FeedForwardNN import FeedForwardNN
@@ -23,12 +24,17 @@ torch.backends.cudnn.deterministic = True
 
 
 def train(model, train_dataloader, optimizer, criterion,
-          ): 
+          filename=False, patience=30,
+          ):
   """
   Training loop of one epoch.
   """
 
   epoch_loss = 0
+
+  no_improvement_count = 0
+  #best_loss = float('inf')
+  early_printed = False
 
   for idx, (x, y, seq_lengths) in enumerate(train_dataloader):   
     assert len(x.size()) == 2, "In training loop, please do batch training; x should be a 2D tensor."
@@ -57,6 +63,34 @@ def train(model, train_dataloader, optimizer, criterion,
     # gradient clipping - I don't fully understand yet
     nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     optimizer.step()
+
+    avg_epoch_loss = epoch_loss / len(train_dataloader.dataset)
+
+    # Check for early stopping
+    '''if avg_epoch_loss < best_loss:
+        best_loss = avg_epoch_loss
+        no_improvement_count = 0
+    else:
+        no_improvement_count += 1
+
+    if no_improvement_count >= patience:
+
+        if not early_printed:
+            print("Stopped early")
+            if _log:
+                _log(filename, "Stopped early")
+            early_printed = True
+        break'''
+
+    early_stopping = EarlyStopping(tolerance=50, min_delta=5)
+    early_stopping(avg_epoch_loss)
+    if early_stopping.early_stop:
+        if not early_printed:
+            print("Stopped early")
+            if _log:
+                _log(filename, "Stopped early")
+            early_printed = True
+        break
 
   return epoch_loss
 
@@ -125,13 +159,14 @@ def tuner(dataset,
 
   start_time = time.time()
   losses_by_epoch = []
+  epoch_start_time = start_time
   
   for epoch in range(1, n_epochs+1):
-    epoch_start_time = time.time()
     epoch_loss = train(model, 
                       dataloader, 
                       optimizer, 
-                      criterion
+                      criterion,
+                      filename
                       )
 
     losses_by_epoch.append(epoch_loss)
@@ -139,10 +174,11 @@ def tuner(dataset,
     if epoch % 10 == 0:
       epoch_elapsed_time = time.time() - epoch_start_time
       print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
-            f"elapsed time {epoch_elapsed_time}")
+            f"elapsed time {epoch_elapsed_time} seconds")
       if log:
         _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)},"
-                       f"elapsed time {epoch_elapsed_time}")
+                       f"elapsed time {epoch_elapsed_time} seconds")
+      epoch_start_time = time.time()
 
   end_time = time.time()
   elapsed_time = end_time - start_time
