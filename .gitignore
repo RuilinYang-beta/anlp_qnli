@@ -1,5 +1,10 @@
+.idea/
 .ipynb_checkpoints/
 data_analysis/.ipynb_checkpoints/
+train-ori-FeedForwardNN/
+train-ori-SimpleRNN/
+train-ori-SimpleTransformer/
+train-ori_char-SimpleTransformer/
 
 __pycache__/
 models/__pycache__/
