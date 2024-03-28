@@ -140,9 +140,9 @@ def tuner(dataset,
       if log:
         _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
       
-      # temp: for google colab only, a ugly hatch to save model per 10 epoch
-      model_path = filename.replace(".log", ".pth")
-      torch.save(model, model_path)    
+      # # temp: for google colab only, a ugly hatch to save model per 10 epoch
+      # model_path = filename.replace(".log", ".pth")
+      # torch.save(model, model_path)    
 
   end_time = time.time()
   elapsed_time = end_time - start_time
