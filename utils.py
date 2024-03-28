@@ -98,18 +98,3 @@ def load_data(dataset: str):
 def pretty_print(data: dict):
   print(json.dumps(data, indent=4))
 
-class EarlyStopping:
-    def __init__(self, tolerance=5, min_delta=0):
-
-        self.tolerance = tolerance
-        self.min_delta = min_delta
-        self.counter = 0
-        self.early_stop = False
-
-    def __call__(self, avg_epoch_loss):
-        best_loss = float('inf')
-        if (best_loss - avg_epoch_loss) > self.min_delta:
-            self.counter +=1
-            if self.counter >= self.tolerance:
-                self.early_stop = True
-
