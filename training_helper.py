@@ -22,8 +22,7 @@ torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
 
-def train(model, train_dataloader, optimizer, criterion,
-          ): 
+def train(model, train_dataloader, optimizer, criterion): 
   """
   Training loop of one epoch.
   """
@@ -125,6 +124,7 @@ def tuner(dataset,
 
   start_time = time.time()
   losses_by_epoch = []
+  epoch_start_time = start_time
   
   for epoch in range(1, n_epochs+1):
     epoch_loss = train(model, 
@@ -136,9 +136,13 @@ def tuner(dataset,
     losses_by_epoch.append(epoch_loss)
 
     if epoch % 10 == 0:
-      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}")
+      epoch_elapsed_time = time.time() - epoch_start_time
+      print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
+            f"elapsed time in the past 10 epochs {epoch_elapsed_time} seconds")
       if log:
-        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}") 
+        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
+              f"elapsed time in the past 10 epochs {epoch_elapsed_time} seconds")
+      epoch_start_time = time.time()
       
       # temp: for google colab only, a ugly hatch to save model per 10 epoch
       model_path = filename.replace(".log", ".pth")
