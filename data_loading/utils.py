@@ -1,9 +1,10 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
 
-# this is like `transform` in StressDataset, as a preprocessing step
 def pad_x_tensors(batch):
         """
+        A preprocessing step function to pad sequences in the batch to make them of equal length.
+        
         Args:
         - batch: a list of tuples of length batch_size (determined by Dataloader), 
                 where each tuple is (x_tensor, y_tensor) (determined by Dataset.__getitem__())

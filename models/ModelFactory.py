@@ -10,10 +10,12 @@ from statics import DEVICE
 
 """
 Centralize model initialization here.
+
 Args: 
 - All possible hyperparams for all models.
 Return:
-- The model and the hyperparams that are specific to the model.
+- The model and the hyperparams that are being used to initialize the specific model.
+
 """
 
 class ModelFactory:

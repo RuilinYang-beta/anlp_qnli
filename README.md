@@ -1,123 +1,76 @@
-# What's new
+# About
 
-## command line arguments
+In this project we explore factors that might have an impact on model performance of QNLI task. The considered factors are:
 
-Now `python qnli.py` requires commandline arguments, run `python qnli.py -h` for help message.  
-There are 3 positional arguments and 2 optional arguments:  
-`python qnli.py {normal, augmented} {original, character} {FFNN, RNN, BiRNN, Transformer} [-s] [-l] [-e <num_epochs>] [-n <num_sets>]`  
-Things in {} you need to choose one, thing in [] is optional.  
-The meaning of each argument see `qnli.py`/`utils.py`, or run `python qnli.py -h`.
+- If the traing set is augmented
+- Notation of numerals
+- Model architecture
+- Hyperparameters
+  - learning rate
+  - batch size
+  - embedding dimension
+  - hidden size (only for FFNN, RNN, BiRNN)
+  - number of layers (only for FFNN, RNN, BiRNN)
+  - number of blocks (only for Transformer)
+  - number of heads (only for Transformer)
 
-## hyperparams
+We train models under different configurations, then zoom in to see if hyperparameters of the best-performed and worst-performed model shows a pattern.
 
-- generate random hyperparam ready
-- log training record ready
+All the trained models can be accessed here: https://drive.google.com/drive/folders/1JPjLZY4nAO8t9UJp8XItxl8Irth-lW9W?usp=sharing
 
-## state of hyperparam-like things
+# Dependencies
 
-In the following 3 category, external things are used to write directory name (more see `temp.py`), tune-able things will be logged in file (see `tuner`), fixed things are fixed inside `tuner`
+- pytorch 2.2.1
 
----
+# Usage
 
-## --------------- external things --------------
+Please use command line arguments to set the choice of training set, notation of number, and model architecture, plus whether to save the trained model, and whether to display log in the terminal.
 
-- normal training set / augmented training set
-- notation
-- normal embedding for numbers / NEKG embeddings
-- which model
+`python qnli.py {normal, augmented} {original, character} {FFNN, RNN, BiRNN, Transformer} [-e <num_epochs>] [-n <num_sets>] [-s] [-l]`
 
----
+In the {curly braces} are positional arguments and its options, in [square brackets] are optional arguments.
 
-## -------------- tune-able things --------------
+- {normal, augmented}: choose if use the normal training set or the augmented training set; augment training set is computed by duplicating the examples where the answer is "neutral" or "contradiction", and swap the position of s1 and s2.
+- {original, character}: choose how the numerals in the sentence is tokenized. "original" for each numeral as a token, "character" for each numeral is split into multiple digit-based tokens.
+- {FFNN, RNN, BiRNN, Transformer}: choose model architecture
+- [-e <num_epochs>]: number of epochs
+- [-n <num_sets>]: number of sets of hyperparameters to generate, one set will be used to initialize and train one model
+- [-s]: whether to save the trained model to a file
+- [-l]: whether to save the log of training process to a file
 
-- batch_size
-- learning_rate
-- embedding_dim
-- hidden_size only FFNN / RNN
-- num_layers only FFNN / RNN
-- num_blocks only Transformer
-- num_heads only Transformer
+See also `python qnli.py -h` for help message.
 
----
+Example usage:
 
-## ---------------- fixed things ----------------
+`python qnli.py augmented character BiRNN -e 1000 -n 5 -l -s`
 
-- n_epochs=5000
-- dropout=0.2
-- output_size=3
-- optimizer=torch.optim.SGD [Ellie can add Adam if want]
+# File structure
 
-## the omnipotent `temp.py`
+## Files in the root folder
 
-- `python temp.py`
+- `qnli.py`: Entry point of the program.
+- `training_helper.py`: scaffolding code for training loop.
+- `statics.py`, `utils.py`, `evaluation.py`: they are self-descriptive
+- `script_augment_train_data.py`: the script we use to augment training set
+- `script_eval_trained_model.py`: load and evaluate a trained model
+- `plot.ipynb`: the plotting jupyter notebook, note it assumes specific paths to model, see the instructions in the notebook
 
-It's making use of `training_helper.py`. FFNN, RNN, Transformer they all work fine now.
-All supported hyperparams are listed in the comments of this file.
+## `data/`
 
-## RNN family
+Contains data.
 
-- ~~We can have BiRNN and StackedRNN by passing flags to `SimpleRNN` class, see `temp.py` and `models/SimpleRNN.py`.~~ `BiRNN` class is back to keep consistency in initializing models
-- RNN don't need h_0 to call `forward` now, this leads to less cluttered code -> PyTorch will handle it
+## `data_analysis/`
 
-## `training_helper.py` for training and hyperparam tuning
+Contains another copy of data, and an exploratory data analysis `data_analysis/very_rough_data_analysis.ipynb`
 
-In this file,
+## `data_loading/`
 
-- `train` is the training process for an epoch,
-- `tuner` is a bunch of hyperparams, epoch loops, inside the epoch loop it calls `train`
-  The purpose of `tuner` is to encapsulate the hyperparams, and decouple `train` from hyperparams as much as possible.
-
-# what we have now
-
-## the `temp_`s in root folder
-
-All files starts with "temp\_" are for dev purposes, they will be cleaned up gradually and won't be a part of the final delivery
-
-- `temp.py` to play with all models and all supported hyperparameters, optionally save the model, and evaluate model
-- `temp_pytorch.py` to play with your GPU
+Our custom `Dataset` class, preprocessing functions, and batch collate functions.
 
 ## `models/`
 
-Contains model classes.
+Contains model classes: FFNN, RNN, BiRNN, Transformer. And other utility classes such as ModelFactory and CustomSequential.
 
 ## `trained_models/`
 
 Contain trained models, and for each model a .md file recording their decrease of loss.
-
-## `temp_sound/`
-
-A lovely sound to play when model finishes training.
-Need to install `playsound` package, by `pip install playsound`.
-
-## `data_loading/`
-
-Our custom Dataset class, preprocessing functions, and static values.
-
-## `data_analysis/`
-
-Data analysis things.
-
-## `data`
-
-Contains data.
-
-## scripts
-
-One-time scripts of some data wrangling, you don't need to care about it.
-
-## Other files in root directory
-
-- `training_helper.py`: contain the `train` function for training 1 epoch, a `tuner` function calling train with diff hyperparams; later on likely will contain more things for hyperparam tuning and plotting
-- `evaluation.py`: contains the evaluation function.
-- `statics.py`: containing statics
-- `qnli.py`: our final entry point of the code
-- `utils.py`: functions there have all migrated, but please keep it here for now in case some scripts need it.
-
-# what to do next?
-
-- [high] Hyperparam tuning -> it's a big time consuming thing
-- [mid] NEKG embeddings
-- [mid] error analysis -> can play with `simple_rnn_b_best_noPack.pth` but don't be too serious
-- [mid] plotting -> make paper look nice
-- [low] add type signature to functions for easy maintenance
-- [low] something about speed, recorded in trello

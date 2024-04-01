@@ -21,11 +21,11 @@ from statics import DEVICE, SEED, Notation
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-# === get choice of training_set, notation, model, save, log from command line ===
+# ========= get choice of training_set, notation, model, save, log from command line =========
 parser = prepare_parser()
 args = parser.parse_args()
 
-# === init configs ===
+# =============== init configs ===============
 model_map = {"FFNN": FeedForwardNN, "RNN": SimpleRNN, "BiRNN": BiRNN, "Transformer": SimpleTransformer}
 # --- for data --- 
 TRAIN_PATH = 'data/train.json' if args.training == 'normal' else 'data/train_augmented.json'
@@ -36,7 +36,7 @@ model_class = model_map[args.model]
 save_model = True if args.save else False
 log = True if args.log else False
 
-# === prepare for training and tuning ===
+# =============== prepare for training and tuning ===============
 train_set = StressDataset(TRAIN_PATH, NOTATION, forEval=False,
                         transform=transform1, 
                         target_transform=target_transform)
@@ -48,12 +48,12 @@ dev_set = StressDataset('data/dev.json', NOTATION, forEval=True,
 
 criterion = nn.CrossEntropyLoss(reduction='sum')
 
-# === prepare for log/save model  ===
+# =============== prepare for log/save model  ===============
 t = "train" if TRAIN_PATH == 'data/train.json' else "train_aug"
 n = NOTATION.value
 m = model_class.__name__
 
-# === set hyperparams ===
+# =============== hyperparams ===============
 # --- supported hyperparams ---
 # * batch_size
 # * learning_rate
@@ -63,32 +63,10 @@ m = model_class.__name__
 # * num_blocks        only Transformer 
 # * num_heads         only Transformer
 
-# --- option1: hand-picked hyperparams, use it for test/zoom-in ---
-# hyperparam_sets = [ 
-#   # { 
-#   # 'batch_size': 300, 
-#   # 'learning_rate': 0.0001, 
-#   # 'embedding_dim': 64, 
-#   # 'hidden_size': 64, 
-#   # 'num_layers': 1, 
-#   # 'num_blocks': 1, 
-#   # 'num_heads': 1 
-#   # }, 
-#   # { 
-#   # 'batch_size': 500, 
-#   # 'learning_rate': 0.01726287996407694, 
-#   # 'embedding_dim': 128, 
-#   # 'hidden_size': 192, 
-#   # 'num_layers': 3, 
-#   # 'num_blocks': 1, 
-#   # 'num_heads': 1 
-#   # } 
-# ]
-
-# --- option2: generate random hyperparams ---
+# --- generate random hyperparams ---
 hyperparam_sets = [generate_hyperparam_set() for i in range(args.num_sets)]
 
-# === train models with diff hyperparam sets ===
+# =============== train models with diff hyperparam sets ===============
 for idx, hype in enumerate(hyperparam_sets): 
 
   filename = f"{t}-{n}-{m}/model-{idx}.log"

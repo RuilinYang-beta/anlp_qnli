@@ -42,17 +42,6 @@ class SimpleRNN(nn.Module):
     self.decoder = nn.Linear(hidden_size * self.D, output_size)  
 
   def forward(self, x_tensor, seq_lengths=None):
-    """
-    Forward pass, 
-    input (a tensor of indices of tokens of one training example) -> embeddings (matrix of (seq_len, embedding_dim)); 
-    embeddings -> feed to built-in RNN -> output of RNN (matrix of (seq_len, hidden_size));
-    last output of RNN (hidden_size) -> feed to decoder -> output of the model (output_size)
-
-    `x_tensor`: tensor of (seq_len) or (N, seq_len) where N is batch_size, it's the indices of tokens
-    `h0`: tensor of shape (1, N, output_size)
-
-    return: tensor of shape (output_size), h_n
-    """
     emb = self.embedding(x_tensor)
 
     if emb.dim() == 2:    
@@ -69,9 +58,7 @@ class SimpleRNN(nn.Module):
     elif emb.dim() == 3:  
       # for batch training
       assert seq_lengths is not None, "seq_lengths should not be None for batch training"
-      # ------------ no pack_padded_sequence, some computation resources is wasted ---------
-      # ------------ supposedly slow but it's fast, somehow ------------
-      
+    
       # `x_tensor`:  (N, L)
       # `emb`:        (N, L, embedding_dim)
       # `out`:        (N, L, hidden_size * D) where D is 2 if bidirectional, else 1
@@ -85,30 +72,5 @@ class SimpleRNN(nn.Module):
       out_final = self.decoder(out_real)
 
       return out_final, h_n
-      # ------------ with pack_padded_sequence and pad_packed_sequence ---------
-      # ------------ supposedly fast but it's slow, somehow ------------
-      # # turn embeddings into a PackedSequence
-
-      # # seq_lengths should be on CPU
-      # # see https://pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_padded_sequence.html
-      # seq_lengths = seq_lengths.cpu()  
-
-      # emb = pack_padded_sequence(emb, seq_lengths, 
-      #                             batch_first=True
-      #                             enforce_sorted=False)
-
-      # out, h_n = self.rnn(emb, h_0)
-
-      # out_unpacked, _ = pad_packed_sequence(out, batch_first=True)
-      # # print(f"out_unpacked.size(): {out_unpacked.size()}")
-
-      # indices = (seq_lengths - 1)
-      # out_real = out_unpacked[torch.arange(out_unpacked.size(0)), indices, :]
-      # # print(f"out_real.size(): {out_real.size()}")
-
-      # out_final = self.decoder(out_real)
-      # # print(f"out_final.size(): {out_final.size()}")
-      # return out_final, h_n
-      # --------------------------------------------------------------------------------
     else: 
       raise ValueError("emb should be 2D or 3D tensor")

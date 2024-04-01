@@ -4,7 +4,6 @@ import json
 import torch 
 import torch.nn as nn
 from torch.utils.data import DataLoader
-# from playsound import playsound
 
 from models.SimpleRNN import SimpleRNN
 from models.FeedForwardNN import FeedForwardNN
@@ -17,17 +16,15 @@ from evaluation import evaluate_model
 from statics import DEVICE, SEED, Notation
 from utils import _log, _generate_random_int, _generate_random_learning_rate
 
-
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 
-
-def train(model, train_dataloader, optimizer, criterion,
-          ):
+def train(model, train_dataloader, optimizer, criterion): 
   """
   Training loop of one epoch.
+  Return: 
+  - epoch_loss: total loss of the epoch
   """
-
   epoch_loss = 0
 
   for idx, (x, y, seq_lengths) in enumerate(train_dataloader):   
@@ -54,7 +51,7 @@ def train(model, train_dataloader, optimizer, criterion,
 
     optimizer.zero_grad()
     batch_loss.backward()
-    # gradient clipping - I don't fully understand yet
+    # gradient clipping - I don't fully understand yet, but it solves the NaN loss problem
     nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
     optimizer.step()
 
@@ -77,7 +74,7 @@ def tuner(dataset,
           log=False, filename=None
           ):
   """
-  A wrapper that wraps hyperparameters and pass them to training loop. 
+  Initialize a model with the given hyperparameters and train it.
   """
   # ------ fixed hyperparams - we don't have time to experiment ------
   optimizer = torch.optim.SGD   
@@ -100,6 +97,7 @@ def tuner(dataset,
                               dropout=dropout
                             )
 
+  # ----------- for logging ------------
   num_params = sum(p.numel() for p in model.parameters())
 
   hyperparams = {
@@ -109,7 +107,6 @@ def tuner(dataset,
                   "embedding_dim": embedding_dim,
                   **chosen_hyperparams,
                 }
-
   
   if log: 
     _log(filename, json.dumps(hyperparams, indent=4))
@@ -119,6 +116,7 @@ def tuner(dataset,
   print(json.dumps(hyperparams, indent=4))
   print(f"Model has {num_params:,} parameters.")   
   print("-------------------------------")
+  # -----------------------------------------------
 
   optimizer = optimizer(model.parameters(), lr=learning_rate)
   criterion = nn.CrossEntropyLoss(reduction='sum')   # so that batch loss is the sum of all losses of the batch
@@ -139,12 +137,12 @@ def tuner(dataset,
     if epoch % 10 == 0:
       epoch_elapsed_time = time.time() - epoch_start_time
       print(f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
-            f"elapsed time {epoch_elapsed_time} seconds")
+            f"elapsed time in the past 10 epochs {epoch_elapsed_time} seconds")
       if log:
-        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)},"
-                       f"elapsed time {epoch_elapsed_time} seconds")
+        _log(filename, f"Epoch-{epoch}, avg loss per example in epoch {epoch_loss / len(dataset)}, "
+              f"elapsed time in the past 10 epochs {epoch_elapsed_time} seconds")
       epoch_start_time = time.time()
-
+  
   end_time = time.time()
   elapsed_time = end_time - start_time
 

@@ -5,7 +5,6 @@ import torch
 from enum import Enum, auto
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#DEVICE = torch.device("cpu")
 SEED = 42
 
 # notation of numbers, as constant 

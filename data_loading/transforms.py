@@ -43,7 +43,6 @@ from statics import Notation, notation2key, Token, labels
 # 1. get the necessary bits of info, like s1, s2, options,
 # 2. convert them into tensor in varied ways (concat, only include diff, with option, without option, etc.)
 
-# TODO: change name to something more meaningful
 def transform1(record, notation, vocab):  
     """
     Compose x_tensor from s1, s2.
